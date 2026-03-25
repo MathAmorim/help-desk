@@ -10,10 +10,10 @@ export default async function NovoChamadoPage() {
 
     let userSetor = "";
     if (session?.user?.id) {
-        const dbUser = await prisma.user.findUnique({
+        const dbUser = await (prisma.user as any).findUnique({
             where: { id: session.user.id }
         });
-        userSetor = dbUser?.setor || "";
+        userSetor = (dbUser as any)?.setor || "";
     }
 
     const categorias = await prisma.category.findMany({

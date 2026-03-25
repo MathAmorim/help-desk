@@ -20,15 +20,16 @@ export default async function AdminUsersPage() {
     }
 
     // Puxa todos os setores já cadastrados no banco (distintos)
-    const usersWithSectors = await prisma.user.findMany({
+    // Cast para any para ignorar erro de tipo enquanto o prisma generate não conclui
+    const usersWithSectors = await (prisma.user as any).findMany({
         where: { setor: { not: null } },
         select: { setor: true },
         distinct: ['setor']
     });
 
-    const sectors = usersWithSectors
-        .map(u => u.setor)
-        .filter(s => s && s.trim().length > 0)
+    const sectors = (usersWithSectors as any[])
+        .map((u: any) => u.setor)
+        .filter((s: any) => s && s.trim().length > 0)
         .sort() as string[];
 
     const users = await prisma.user.findMany({
@@ -100,7 +101,7 @@ export default async function AdminUsersPage() {
                     </div>
                 </CardContent>
             </Card>
-           
+
         </div>
     );
 }

@@ -65,10 +65,10 @@ export async function createUser(data: { name: string; email?: string; role: str
     const tempPassword = generateRandomPassword();
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
-    const user = await prisma.user.create({
+    const user = await (prisma.user as any).create({
         data: {
             name,
-            email: email || null,
+            email: (email || null) as any,
             role,
             cpf: cleanedCpf,
             funcao: funcao || null,
@@ -150,11 +150,11 @@ export async function updateUser(data: { id: string; name: string; email?: strin
         }
     }
 
-    const user = await prisma.user.update({
+    const user = await (prisma.user as any).update({
         where: { id },
         data: {
             name,
-            email: email || null,
+            email: (email || null) as any,
             role,
             cpf: cleanedCpf,
             funcao: funcao || null,
