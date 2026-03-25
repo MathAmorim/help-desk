@@ -74,10 +74,15 @@ export async function updateTheme(theme: string) {
         throw new Error("Não autorizado");
     }
 
-    await prisma.user.update({
-        where: { id: session.user.id },
-        data: { theme },
-    });
+    try {
+        await prisma.user.update({
+            where: { id: session.user.id },
+            data: { theme },
+        });
+    } catch (error) {
+        console.error("Erro ao atualizar tema no DB (Usuário pode não existir mais):", error);
+        // Não lançamos erro fatal aqui para não quebrar a UI, já que o next-themes já aplicou localmente
+    }
 
     return { success: true };
 }

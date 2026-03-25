@@ -26,8 +26,8 @@ export default function SnakeGame() {
     const gameLoopRef = useRef<NodeJS.Timeout>();
 
     const generateFood = useCallback(() => {
-        let newFood;
-        const currentSnake = snake;
+        let newFood: { x: number; y: number };
+        const currentSnake = snake as { x: number; y: number }[];
         while (true) {
             newFood = {
                 x: Math.floor(Math.random() * GRID_SIZE),

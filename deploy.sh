@@ -46,19 +46,6 @@ APP_DIR="/var/www/help-desk"
 # Clone/Pull repo
 echo -e "\n💻 [2/7] Preparando o Código Fonte..."
 
-if ! command -v git &> /dev/null; then
-  echo -e "⚠️\e[0;31m\e[1m Aviso: O Git não foi detectado no sistema."
-  read -p "\e[0;33mDeseja instalar o Git agora automaticamente? (s/n):\e[0m " INSTALL_GIT
-  if [[ "$INSTALL_GIT" =~ ^[sS]$ ]]; then
-    echo -e "Baixando e instalando Git..."
-    apt-get update
-    apt-get install -y git
-  else
-    echo -e "❌ \e[0;31m\e[1mInstalação abortada. O Git é estritamente necessário para baixar o código."
-    exit 1
-  fi
-fi
-
 if [ -d "$APP_DIR" ]; then
   echo -e "\e[0;34mDiretório $APP_DIR já existe.\n\e[0m Baixando últimas atualizações..."
   cd $APP_DIR
@@ -116,6 +103,11 @@ EOF
 echo -e "\n🏗️  [5/7] Instalando pacotes NodeJS e compilando o Next.js..."
 npm install
 
+echo -e "Configurando diretórios de armazenamento e permissões..."
+mkdir -p public/uploads
+chmod -R 775 public/uploads
+chown -R www-data:www-data public/uploads || true
+
 echo -e "Gerando Prisma Client e migrando as tabelas SQL..."
 npx prisma generate
 npx prisma db push --accept-data-loss
@@ -137,7 +129,9 @@ async function main() {
       name: 'Super Administrador',
       password: hashedPassword,
       role: 'ADMIN',
-      mustChangePassword: false
+      mustChangePassword: false,
+      cpf: '00000000000',
+      theme: 'dark'
     }
   }).catch(e => {
     return prisma.user.update({
@@ -155,6 +149,12 @@ echo -e "Habilitando o Build de Produção (Isso pode demorar um pouco)..."
 npm run build
 
 echo -e "\n🌐 [6/7] Inicializando a Aplicação como processo resiliente (PM2)..."
+
+if ! command -v pm2 &> /dev/null; then
+  echo -e "⚠️ PM2 não encontrado. Instalando..."
+  npm install -g pm2
+fi
+
 pm2 delete "help-desk" > /dev/null 2>&1 || true
 pm2 start npm --name "help-desk" -- run start
 pm2 save
