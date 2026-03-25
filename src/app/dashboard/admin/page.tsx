@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import NewUserButton from "./NewUserButton";
 import ResetUserButton from "./ResetUserButton";
+import EditUserButton from "./EditUserButton";
 
 export default async function AdminUsersPage() {
     const session = await getServerSession(authOptions);
@@ -17,6 +18,18 @@ export default async function AdminUsersPage() {
             </div>
         );
     }
+
+    // Puxa todos os setores já cadastrados no banco (distintos)
+    const usersWithSectors = await prisma.user.findMany({
+        where: { setor: { not: null } },
+        select: { setor: true },
+        distinct: ['setor']
+    });
+
+    const sectors = usersWithSectors
+        .map(u => u.setor)
+        .filter(s => s && s.trim().length > 0)
+        .sort() as string[];
 
     const users = await prisma.user.findMany({
         orderBy: { name: "asc" }
@@ -31,7 +44,7 @@ export default async function AdminUsersPage() {
                         Visualização dos usuários cadastrados no sistema.
                     </p>
                 </div>
-                <NewUserButton />
+                <NewUserButton sectors={sectors} />
             </div>
 
             <Card className="shadow-sm border-slate-200 dark:border-slate-800">
@@ -76,7 +89,8 @@ export default async function AdminUsersPage() {
                                         <TableCell className="text-sm text-slate-500 dark:text-slate-400">
                                             {new Date(user.createdAt).toLocaleDateString("pt-BR")}
                                         </TableCell>
-                                        <TableCell className="text-right">
+                                        <TableCell className="text-right whitespace-nowrap">
+                                            <EditUserButton user={user} sectors={sectors} />
                                             <ResetUserButton userId={user.id} userName={user.name} />
                                         </TableCell>
                                     </TableRow>
@@ -86,9 +100,7 @@ export default async function AdminUsersPage() {
                     </div>
                 </CardContent>
             </Card>
-            <div className="text-sm text-slate-500 dark:text-slate-400 mt-4 text-center">
-                * Para alterar os perfis (Role), edite-os diretamente pelo banco de dados ou adicione painéis de atualização posteriores.
-            </div>
+           
         </div>
     );
 }

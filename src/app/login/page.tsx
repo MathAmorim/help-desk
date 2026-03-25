@@ -54,20 +54,21 @@ export default function LoginPage() {
 
     return (
         <div
-            className="flex min-h-screen w-full flex-col bg-cover bg-center bg-no-repeat"
-            style={{ backgroundImage: "url('/image/acreuna_blueprint.svg')" }}
+            className="flex min-h-screen w-full flex-col bg-cover bg-center bg-no-repeat bg-[url('/image/acreuna_blueprint-ph.svg')] md:bg-[url('/image/acreuna_blueprint-dt.svg')]"
         >
-            <div className="flex flex-1 items-center justify-center p-4 bg-slate-50/70 dark:bg-slate-950/80 ">
+            <div className="flex flex-1 items-center justify-center p-4 dark:bg-slate-950/80 ">
                 <Card className="w-full max-w-md shadow-2xl border-t-4 border-t-black">
-                    <CardHeader className="space-y-1 text-center">
-                        <div className="flex justify-center mb-2">
-                            <div className="rounded-full bg-slate-100 p-3">
-                                <Headset className="h-8 w-8 text-black" />
-                            </div>
+                    <CardHeader className="text-center pb-4">
+                        <div className="flex justify-center -mt-10 -mb-5">
+                            <img
+                                src="/image/LogoCPD.png"
+                                alt="Logo CPD"
+                                className="h-40 w-auto object-contain drop-shadow-md"
+                            />
                         </div>
-                        <CardTitle className="text-2xl font-bold tracking-tight">Portal Help Desk</CardTitle>
-                        <CardDescription>
-                            Acesse sua conta para abrir chamados ou gerenciar atendimentos.
+                        <CardTitle className="text-2xl font-bold tracking-tight mt-0">Portal de Chamados</CardTitle>
+                        <CardDescription className="pt-0 -mb-5">
+                            Acesse sua conta para abrir chamados.
                         </CardDescription>
                     </CardHeader>
                     <form onSubmit={handleSubmit}>

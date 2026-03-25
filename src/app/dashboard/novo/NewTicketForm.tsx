@@ -14,7 +14,7 @@ import Link from "next/link";
 
 import { uploadFile } from "@/app/actions/upload";
 
-export default function NewTicketForm({ categorias }: { categorias: any[] }) {
+export default function NewTicketForm({ categorias, userSetor = "" }: { categorias: any[], userSetor?: string }) {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -103,8 +103,15 @@ export default function NewTicketForm({ categorias }: { categorias: any[] }) {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="departamento">Seu Departamento (Opcional)</Label>
-                                <Input id="departamento" name="departamento" placeholder="Ex: Financeiro, RH, Comercial" />
+                                <Label htmlFor="departamento">Seu Departamento</Label>
+                                <Input
+                                    id="departamento"
+                                    name="departamento"
+                                    placeholder="Ex: Financeiro, RH, Comercial"
+                                    defaultValue={userSetor}
+                                    readOnly={!!userSetor}
+                                    className={userSetor ? "bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-not-allowed border-slate-200 dark:border-slate-700 pointer-events-none" : ""}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="contatoOpcional">Telefone ou Ramal (Apenas Números)</Label>

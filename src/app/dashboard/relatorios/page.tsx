@@ -111,6 +111,7 @@ export default async function RelatoriosPage({ searchParams }: { searchParams: P
                     resolvidosPorTecnico={metrics.resolvidosPorTecnico}
                     abertosPorTecnico={metrics.abertosPorTecnico}
                     avaliacoesPorTecnico={metrics.avaliacoesPorTecnico}
+                    chamadosPorSetor={metrics.chamadosPorSetor}
                 />
             </div>
         </div>

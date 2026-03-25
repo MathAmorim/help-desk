@@ -112,3 +112,60 @@ export async function resetUserPassword(userId: string) {
         tempPassword
     };
 }
+
+export async function updateUser(data: { id: string; name: string; email?: string; role: string; cpf: string; funcao?: string; setor?: string }) {
+    const session = await getServerSession(authOptions);
+
+    if (!session || session.user.role !== "ADMIN") {
+        throw new Error("Não autorizado");
+    }
+
+    const { id, name, email, role, cpf, funcao, setor } = data;
+
+    // Limpa o CPF
+    const cleanedCpf = cpf.replace(/\D/g, '');
+
+    if (cleanedCpf.length !== 11) {
+        throw new Error("CPF deve conter 11 dígitos.");
+    }
+
+    const whereConditions: any[] = [{ cpf: cleanedCpf }];
+    if (email) {
+        whereConditions.push({ email });
+    }
+
+    const existingUser = await prisma.user.findFirst({
+        where: {
+            id: { not: id },
+            OR: whereConditions
+        },
+    });
+
+    if (existingUser) {
+        if (existingUser.email && existingUser.email === email) {
+            throw new Error("E-mail já está em uso por outro usuário.");
+        }
+        if (existingUser.cpf === cleanedCpf) {
+            throw new Error("CPF já está em uso por outro usuário.");
+        }
+    }
+
+    const user = await prisma.user.update({
+        where: { id },
+        data: {
+            name,
+            email: email || null,
+            role,
+            cpf: cleanedCpf,
+            funcao: funcao || null,
+            setor: setor || null,
+        },
+    });
+
+    revalidatePath("/dashboard/admin");
+
+    return {
+        success: true,
+        user,
+    };
+}

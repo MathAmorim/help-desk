@@ -11,8 +11,8 @@ import { Providers } from "@/components/Providers";
 import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
-  title: "Help Desk Portal",
-  description: "Sistema para abertura e gerenciamento de chamados de tecnologia e suporte.",
+  title: "Portal de Chamados",
+  description: "Sistema para abertura e gerenciamento de chamados da Prefeitura Municipal de Acreúna.",
 };
 
 export default function RootLayout({

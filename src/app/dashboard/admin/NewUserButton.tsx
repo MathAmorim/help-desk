@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { UserPlus, Loader2, Copy, Check } from "lucide-react";
 import { createUser } from "@/app/actions/users";
 
-export default function NewUserButton() {
+export default function NewUserButton({ sectors = [] }: { sectors?: string[] }) {
     const [open, setOpen] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isPending, setIsPending] = useState(false);
@@ -85,7 +85,7 @@ export default function NewUserButton() {
                                 <Input id="name" name="name" placeholder="Ex: Maria José" required />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="cpf">CPF (Apenas Números)</Label>
+                                <Label htmlFor="cpf">CPF <span className="text-xs font-normal text-slate-500">(Apenas Números)</span></Label>
                                 <Input
                                     id="cpf"
                                     name="cpf"
@@ -113,18 +113,24 @@ export default function NewUserButton() {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="funcao" className="leading-tight block h-10">
-                                        Sua Função/Cargo <br />
-                                        <span className="text-xs font-normal text-slate-500">(Opcional)</span>
-                                    </Label>
-                                    <Input id="funcao" name="funcao" placeholder="Ex: Analista Financeiro" />
+                                    <Label htmlFor="funcao">Função/Cargo</Label>
+                                    <Input id="funcao" name="funcao" placeholder="Ex: Analista Financeiro" required />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="setor" className="leading-tight block h-10">
-                                        Seu Setor <br />
-                                        <span className="text-xs font-normal text-slate-500">(Opcional)</span>
-                                    </Label>
-                                    <Input id="setor" name="setor" placeholder="Ex: Financeiro" />
+                                    <Label htmlFor="setor">Setor</Label>
+                                    <Input
+                                        id="setor"
+                                        name="setor"
+                                        placeholder="Selecione ou digite um novo..."
+                                        list="setor-list"
+                                        autoComplete="off"
+                                        required
+                                    />
+                                    <datalist id="setor-list">
+                                        {sectors.map((s, idx) => (
+                                            <option key={idx} value={s} />
+                                        ))}
+                                    </datalist>
                                 </div>
                             </div>
                         </div>

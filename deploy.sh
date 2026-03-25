@@ -5,29 +5,29 @@ set -e
 
 # Ensure script is run as root
 if [ "$EUID" -ne 0 ]
-  then echo "Por favor, rode o script como root (sudo ./deploy.sh)"
+  then echo -e "\e[31mPor favor, rode o script como root (sudo ./deploy.sh)"
   exit
 fi
 
-echo "======================================================"
-echo "🚀 Help Desk - Instalador Automático (Ubuntu/Debian)  "
-echo "======================================================"
+echo -e "\e[0;34m======================================================"
+echo -e "🚀 Help Desk - Instalador Automático (Ubuntu/Debian)  "
+echo -e "\e[0;34m======================================================"
 
 # URL do Repositório (Hardcoded pelo usuário)
 GIT_URL="https://github.com/MathAmorim/help-desk.git"
 
-echo ""
-echo "Qual Banco de Dados em produção deseja utilizar?"
-echo "1) PostgreSQL"
-echo "2) MySQL"
-read -p "Opção (1 ou 2): " DB_OPTION
+echo -e ""
+echo -e "Qual Banco de Dados em produção deseja utilizar?"
+echo -e "1) PostgreSQL"
+echo -e "2) MySQL"
+read -p "\e[0;34mOpção (1 ou 2): \e[0m" DB_OPTION
 
-echo ""
-echo "==== CREDENCIAIS DO PRIMEIRO ACESSO ===="
-echo "Este usuário será o Administrador principal para você governar o painel inicial."
-read -p "Digite o email de Administrador inicial do sistema (não precisa ser real, ex: admin@empresa.com): " ADMIN_EMAIL
-read -s -p "Digite a senha do Administrador: " ADMIN_PASS
-echo ""
+echo -e ""
+echo -e "==== CREDENCIAIS DO PRIMEIRO ACESSO ===="
+echo -e "Este usuário será o \e[1mAdministrador\e[0m principal para você governar o painel inicial."
+read -p "Digite o email de Administrador inicial do sistema (não precisa ser real, ex: admin@empresa.com): \e[0m" ADMIN_EMAIL
+read -s -p "\e[0;34mDigite a senha do Administrador: \e[0m" ADMIN_PASS
+echo -e ""
 
 # Install base packages
 echo -e "\n📦 [1/7] Instalando infraestrutura e dependências do servidor..."
@@ -45,12 +45,26 @@ APP_DIR="/var/www/help-desk"
 
 # Clone/Pull repo
 echo -e "\n💻 [2/7] Preparando o Código Fonte..."
+
+if ! command -v git &> /dev/null; then
+  echo -e "⚠️\e[0;31m\e[1m Aviso: O Git não foi detectado no sistema."
+  read -p "\e[0;33mDeseja instalar o Git agora automaticamente? (s/n):\e[0m " INSTALL_GIT
+  if [[ "$INSTALL_GIT" =~ ^[sS]$ ]]; then
+    echo -e "Baixando e instalando Git..."
+    apt-get update
+    apt-get install -y git
+  else
+    echo -e "❌ \e[0;31m\e[1mInstalação abortada. O Git é estritamente necessário para baixar o código."
+    exit 1
+  fi
+fi
+
 if [ -d "$APP_DIR" ]; then
-  echo "Diretório $APP_DIR já existe. Baixando últimas atualizações..."
+  echo -e "\e[0;34mDiretório $APP_DIR já existe.\n\e[0m Baixando últimas atualizações..."
   cd $APP_DIR
   git pull
 else
-  echo "Clonando o repositório..."
+  echo -e "\e[0;34mClonando o repositório..."
   git clone $GIT_URL $APP_DIR
   cd $APP_DIR
 fi
@@ -58,7 +72,7 @@ fi
 # Database Setup
 echo -e "\n🗄️ [3/7] Provisionando o Banco de Dados escolhido..."
 if [ "$DB_OPTION" == "1" ]; then
-  echo "Instalando e Configurando o PostgreSQL..."
+  echo -e "Instalando e Configurando o PostgreSQL..."
   apt-get install -y postgresql postgresql-contrib
   
   # Setup Postgres User and DB (Ignores errors if they already exist across deployments)
@@ -71,7 +85,7 @@ if [ "$DB_OPTION" == "1" ]; then
   PROVIDER="postgresql"
 
 elif [ "$DB_OPTION" == "2" ]; then
-  echo "Instalando e Configurando o MySQL..."
+  echo -e "Instalando e Configurando o MySQL..."
   apt-get install -y mysql-server
   
   mysql -e "CREATE DATABASE IF NOT EXISTS helpdesk;"
@@ -82,7 +96,7 @@ elif [ "$DB_OPTION" == "2" ]; then
   DB_URL="mysql://helpdeskuser:$DB_PASS@localhost:3306/helpdesk"
   PROVIDER="mysql"
 else
-  echo "Opção de Banco Inválida. Abortando processo."
+  echo -e "\e[0;31m\e[1mOpção de Banco Inválida. Abortando processo."
   exit 1
 fi
 
@@ -91,7 +105,7 @@ echo -e "\n⚙️ [4/7] Convertendo os drivers do ORM Prisma para '$PROVIDER'...
 sed -i "s/provider = \".*\"/provider = \"$PROVIDER\"/" prisma/schema.prisma
 
 # Setup ENV
-echo "Configurando as variáveis de ambiente (.env)..."
+echo -e "Configurando as variáveis de ambiente (.env)..."
 cat <<EOF > .env
 DATABASE_URL="$DB_URL"
 NEXTAUTH_SECRET="$NEXTAUTH_SECRET"
@@ -102,14 +116,14 @@ EOF
 echo -e "\n🏗️  [5/7] Instalando pacotes NodeJS e compilando o Next.js..."
 npm install
 
-echo "Gerando Prisma Client e migrando as tabelas SQL..."
+echo -e "Gerando Prisma Client e migrando as tabelas SQL..."
 npx prisma generate
 npx prisma db push --accept-data-loss
 
-echo "Populando o banco de dados inicial (Seed)..."
-npx prisma db seed || echo "Seed ignorado (não detectado no package.json)"
+echo -e "Populando o banco de dados inicial (Seed)..."
+npx prisma db seed || echo -e "\e[0;33m\e[1mSeed ignorado (não detectado no package.json)"
 
-echo "Criando Cartão de Administrador Mestre ($ADMIN_EMAIL)..."
+echo -e "Criando Cartão de Administrador Mestre ($ADMIN_EMAIL)..."
 cat <<EOF > script-seed-admin.js
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
@@ -137,7 +151,7 @@ EOF
 node script-seed-admin.js
 rm script-seed-admin.js
 
-echo "Habilitando o Build de Produção (Isso pode demorar um pouco)..."
+echo -e "Habilitando o Build de Produção (Isso pode demorar um pouco)..."
 npm run build
 
 echo -e "\n🌐 [6/7] Inicializando a Aplicação como processo resiliente (PM2)..."
@@ -167,13 +181,13 @@ ln -sf /etc/nginx/sites-available/help-desk /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
 systemctl restart nginx
 
-echo ""
-echo "======================================================"
-echo "🏆 DEPLOY CONCLUÍDO COM SUCESSO!                      "
-echo "======================================================"
-echo "✓ Seu banco $PROVIDER está rodando mascarado protegido."
-echo "✓ Seu Next.js está rodando em PM2 contínuo."
-echo "✓ NGINX está roteando as portas nativas local -> Net."
-echo ""
-echo "Consulte o DEPLOY_LINUX.md para saber os passos finais manuais!"
-echo "Ex: apontar seu DNS e dar cargo Admin para sua conta."
+echo -e ""
+echo -e "======================================================"
+echo -e "🏆 DEPLOY CONCLUÍDO COM SUCESSO!                      "
+echo -e "======================================================"
+echo -e "\e[0;32m[✓] Seu banco $PROVIDER está rodando mascarado protegido."
+echo -e "\e[0;32m[✓] Seu Next.js está rodando em PM2 contínuo."
+echo -e "\e[0;32m[✓] NGINX está roteando as portas nativas local -> Net."
+echo -e ""
+echo -e "\e[0;33mConsulte o DEPLOY_LINUX.md para saber os passos finais manuais!"
+

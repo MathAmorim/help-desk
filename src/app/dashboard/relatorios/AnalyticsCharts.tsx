@@ -10,9 +10,10 @@ interface AnalyticsProps {
     resolvidosPorTecnico: { name: string, quantidade: number }[];
     abertosPorTecnico: { name: string, quantidade: number }[];
     avaliacoesPorTecnico: { name: string, media: number, quantidade: number }[];
+    chamadosPorSetor: { name: string, quantidade: number }[];
 }
 
-export default function AnalyticsCharts({ resolvidosPorTecnico, abertosPorTecnico, avaliacoesPorTecnico }: AnalyticsProps) {
+export default function AnalyticsCharts({ resolvidosPorTecnico, abertosPorTecnico, avaliacoesPorTecnico, chamadosPorSetor }: AnalyticsProps) {
     const idPrefix = useId();
 
     return (
@@ -91,6 +92,29 @@ export default function AnalyticsCharts({ resolvidosPorTecnico, abertosPorTecnic
                         </div>
                     ) : (
                         <div className="h-full flex items-center justify-center text-slate-500 dark:text-slate-400 text-sm">Nenhum técnico foi avaliado pelos usuários neste período.</div>
+                    )}
+                </CardContent>
+            </Card>
+
+            {/* Gráfico de Barras: Volume Departamental */}
+            <Card className="shadow-sm lg:col-span-2">
+                <CardHeader>
+                    <CardTitle className="text-lg text-slate-700 dark:text-slate-300">Volume de Chamados por Setor (Departamento)</CardTitle>
+                </CardHeader>
+                <CardContent className="h-80">
+                    {chamadosPorSetor.length > 0 ? (
+                        <div className="w-full h-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={chamadosPorSetor} margin={{ top: 20, right: 30, left: 0, bottom: 25 }}>
+                                    <XAxis dataKey="name" tick={{ fontSize: 12 }} angle={-15} textAnchor="end" />
+                                    <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                                    <Tooltip cursor={{ fill: '#f1f5f9' }} />
+                                    <Bar dataKey="quantidade" fill="#10b981" radius={[4, 4, 0, 0]} name="Volume Acumulado" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    ) : (
+                        <div className="h-full flex items-center justify-center text-slate-500 dark:text-slate-400 text-sm">Nenhum chamado aberto na origem por departamentos.</div>
                     )}
                 </CardContent>
             </Card>

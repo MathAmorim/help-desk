@@ -144,6 +144,18 @@ export async function getDashboardMetrics(periodo: string) {
         quantidade: r._count.id
     }));
 
+    // Agrupamento de Chamados por Setor (Departamento)
+    const setorRaw = await prisma.ticket.groupBy({
+        by: ['departamento'],
+        where: whereClauseObj,
+        _count: { id: true }
+    });
+
+    const chamadosPorSetor = setorRaw.map(r => ({
+        name: r.departamento || "Sem Setor",
+        quantidade: r._count.id
+    })).sort((a, b) => b.quantidade - a.quantidade);
+
     const avaliacoesPorTecnico = avaliacoesRaw.map(r => ({
         name: userMap[r.responsavelId as string] || "Desconhecido",
         media: Number(r._avg.notaAvaliacao?.toFixed(1)) || 0,
@@ -160,6 +172,7 @@ export async function getDashboardMetrics(periodo: string) {
         abertosPorTecnico,
         avaliacoesPorTecnico,
         tecnicoDestaque,
+        chamadosPorSetor,
         userStats: {
             abertos: userAbertos,
             fechados: userResolvidosLocal,
