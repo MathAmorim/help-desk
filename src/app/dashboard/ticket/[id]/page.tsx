@@ -12,7 +12,7 @@ import TicketManager from "./TicketManager";
 import { TicketRating } from "./TicketRating";
 import { timeAgo } from "@/lib/utils";
 import PrintTicketButton from "./PrintTicketButton";
-
+import { notFound } from "next/navigation";
 export default async function TicketDetailsPage({ params }: { params: Promise<{ id: string }> }) {
     const session = await getServerSession(authOptions);
 
@@ -22,15 +22,7 @@ export default async function TicketDetailsPage({ params }: { params: Promise<{ 
     const ticket = await getTicketById(id);
 
     if (!ticket) {
-        return (
-            <div className="flex flex-col items-center justify-center py-20">
-                <h2 className="text-2xl font-bold">Chamado não encontrado</h2>
-                <p className="text-slate-500 dark:text-slate-400 mt-2">Você não tem permissão para visualizar ou ele não existe.</p>
-                <Link href="/dashboard" className="mt-6">
-                    <Button>Voltar ao Painel</Button>
-                </Link>
-            </div>
-        );
+        notFound();
     }
 
     const isSupportOrAdmin = session.user.role === "SUPORTE" || session.user.role === "ADMIN";

@@ -156,7 +156,7 @@ export async function getTicketById(id: string) {
     if (!ticket) return null;
 
     if (session.user.role === "USUARIO" && ticket.solicitanteId !== session.user.id) {
-        throw new Error("Acesso negado");
+        return null;
     }
 
     if (session.user.role === "USUARIO") {
@@ -189,7 +189,7 @@ export async function addComment(ticketId: string, texto: string, isInterno: boo
             attachments: attachmentIds && attachmentIds.length > 0 ? {
                 connect: attachmentIds.map(id => ({ id }))
             } : undefined
-        }
+        } as any
     });
 
     let detalhesLog = isInterno ? "Nota interna adicionada." : "Comentário público adicionado.";
@@ -538,7 +538,7 @@ export async function encerrarChamadoUsuario(ticketId: string, motivo?: string) 
 
     const t = await prisma.ticket.update({
         where: { id: ticketId },
-        data: { status: "RESOLVIDO", encerradoPeloAutor: true }
+        data: { status: "RESOLVIDO", encerradoPeloAutor: true } as any
     });
 
     await prisma.auditLog.create({
@@ -559,7 +559,7 @@ export async function encerrarChamadoUsuario(ticketId: string, motivo?: string) 
             isSolucao: true,
             ticketId,
             autorId: session.user.id
-        }
+        } as any
     });
 
     if (ticket.responsavelId) {

@@ -30,6 +30,7 @@ model User {
   comments           Comment[]
   auditLogs          AuditLog[]
   notifications      Notification[]
+  snakeScores        SnakeScore[]
 }
 
 model Ticket {
@@ -136,5 +137,14 @@ model Notification {
   ticketId  String?
   ticket    Ticket?  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   
+  createdAt DateTime @default(now())
+}
+
+model SnakeScore {
+  id        String   @id @default(cuid())
+  score     Int
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guestName String?
   createdAt DateTime @default(now())
 }

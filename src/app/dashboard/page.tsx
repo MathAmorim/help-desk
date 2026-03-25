@@ -104,8 +104,8 @@ export default async function DashboardPage({
                 </div>
                 <div className="flex gap-3">
                     <Link href="/dashboard/novo">
-                        <Button className="bg-black text-white hover:bg-black/80">
-                            <PlusCircle className="mr-2 h-4 w-4" /> Novo Chamado
+                        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 dark:shadow-indigo-500/10 transition-all hover:scale-105 active:scale-95 font-bold flex items-center justify-center">
+                            <PlusCircle className="mr-2 h-5 w-5 font-bold" /> Novo Chamado
                         </Button>
                     </Link>
                 </div>

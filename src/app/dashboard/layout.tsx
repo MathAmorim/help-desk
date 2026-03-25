@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { LogOut } from "lucide-react";
+import { LogOut, Home } from "lucide-react";
 import Link from "next/link";
 import { LogoutButton } from "@/components/LogoutButton";
 import NotificationBell from "@/components/NotificationBell";
@@ -30,9 +30,9 @@ export default async function DashboardLayout({
 
                     {/* Lado Esquerdo (Logo + Links da Navegação) */}
                     <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-6 w-full sm:w-auto">
-                        <Link href="/dashboard" className="flex items-center gap-2 font-bold text-xl tracking-tight mr-2 whitespace-nowrap">
-                            <span className="bg-black text-white px-2 py-1 rounded-md text-sm">HD</span>
-                            <span className="inline-block">Help Desk</span>
+                        <Link href="/dashboard" className="flex items-center gap-2 font-bold text-xl tracking-tight mr-2 whitespace-nowrap group">
+                            <Home className="h-6 w-6 text-slate-900 dark:text-slate-100 group-hover:scale-110 transition-transform" />
+                            <span className="inline-block">Chamados</span>
                         </Link>
 
                         {/* Botões padronizados da barra de navegação */}
