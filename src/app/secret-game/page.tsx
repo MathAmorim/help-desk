@@ -23,7 +23,7 @@ export default function SnakeGame() {
     const [leaderboard, setLeaderboard] = useState<any[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [guestName, setGuestName] = useState("");
-    const gameLoopRef = useRef<NodeJS.Timeout>();
+    const gameLoopRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
     const generateFood = useCallback(() => {
         let newFood: { x: number; y: number };
