@@ -63,6 +63,8 @@ fi
 
 # 2. Código Fonte
 echo -e "\n💻 [2/7] Sincronizando o Código Fonte..."
+# Corrige erro de "dubious ownership" do Git (comum ao rodar como root)
+git config --global --add safe.directory "$APP_DIR" || true
 if [ -d "$APP_DIR" ]; then
   cd $APP_DIR
   echo "Baixando atualizações do Git..."
