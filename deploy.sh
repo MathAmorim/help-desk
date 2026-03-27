@@ -30,7 +30,7 @@ echo ""
 echo "Qual Banco de Dados em produção deseja utilizar?"
 echo "1) PostgreSQL"
 echo "2) MySQL"
-read -p $'\e[0;34mOpção (1 ou 2): \e[0m' DB_OPTION
+read -p "Opção (1 ou 2): " DB_OPTION
 
 echo ""
 echo "==== CREDENCIAIS DO PRIMEIRO ACESSO ===="
@@ -38,7 +38,6 @@ echo -e "Este usuário será o \e[1mAdministrador\e[0m principal para você gove
 read -p "Digite o email de Administrador inicial do sistema (não precisa ser real, ex: admin@empresa.com): " ADMIN_EMAIL
 read -s -p "Digite a senha do Administrador: " ADMIN_PASS
 echo ""
-
 
 # Install base packages
 echo -e "\n📦 [1/7] Instalando infraestrutura e dependências do servidor..."
@@ -64,6 +63,9 @@ if [ -d "$APP_DIR" ]; then
   echo -e "\e[0;34mDiretório $APP_DIR já existe.\n\e[0m Atualizando..."
   cd $APP_DIR
   git pull
+  # Limpeza profunda de arquivos não-rastreados que podem sujar o build
+  # Excluímos o .env e o public/uploads para não deletar os dados do usuário
+  git clean -fd -e .env -e public/uploads
 else
   echo -e "\e[0;34mClonando o repositório...\e[0m"
   git clone $GIT_URL $APP_DIR
@@ -137,19 +139,19 @@ fi
 npx prisma generate
 npx prisma db push --accept-data-loss
 
-echo -e "Populando o banco de dados inicial (Seed)..."
-npx prisma db seed || echo -e "\e[0;33m\e[1mSeed ignorado (não detectado no package.json)\e[0m"
-
-echo "Criando Cartão de Administrador Mestre ($ADMIN_EMAIL)..."
-cat <<EOF > script-seed-admin.js
+echo -e "Populando o banco de dados inicial (Admin e Categorias)..."
+cat <<EOF > script-seed-initial.js
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
+
 async function main() {
+  // 1. Criar/Atualizar Administrador
   const hashedPassword = await bcrypt.hash('$ADMIN_PASS', 10);
-  
-  await prisma.user.create({
-    data: {
+  await prisma.user.upsert({
+    where: { email: '$ADMIN_EMAIL' },
+    update: { password: hashedPassword, role: 'ADMIN' },
+    create: {
       email: '$ADMIN_EMAIL',
       name: 'Super Administrador',
       password: hashedPassword,
@@ -158,29 +160,52 @@ async function main() {
       cpf: '00000000000',
       theme: 'dark'
     }
-  }).catch(e => {
-    return prisma.user.update({
-      where: { email: '$ADMIN_EMAIL' },
-      data: { password: hashedPassword, role: 'ADMIN' }
-    });
   });
+  console.log("✓ Administrador configurado.");
+
+  // 2. Criar/Atualizar Categorias Padrão
+  const categories = [
+    { nome: 'Hardware', prioridadePadrao: 'MEDIA' },
+    { nome: 'Software', prioridadePadrao: 'BAIXA' },
+    { nome: 'Rede/Internet', prioridadePadrao: 'ALTA' },
+    { nome: 'Acessos', prioridadePadrao: 'CRITICA' },
+    { nome: 'Dúvida', prioridadePadrao: 'BAIXA' },
+    { nome: 'Impressoras', prioridadePadrao: 'BAIXA' },
+    { nome: 'Sistemas Internos', prioridadePadrao: 'MEDIA' }
+  ];
+
+  for (const cat of categories) {
+    await prisma.category.upsert({
+      where: { nome: cat.nome },
+      update: { prioridadePadrao: cat.prioridadePadrao },
+      create: { 
+        nome: cat.nome, 
+        prioridadePadrao: cat.prioridadePadrao,
+        ativo: true 
+      }
+    });
+  }
+  console.log("✓ Categorias padrão semeadas.");
 }
-main().then(() => console.log("Admin forjado com sucesso!")).catch(e => console.error("Falha ao criar admin:", e)).finally(() => prisma.\$disconnect());
+
+main()
+  .then(() => console.log("🌱 Seed concluído com sucesso!"))
+  .catch(e => console.error("❌ Falha no seed:", e))
+  .finally(() => prisma.\$disconnect());
 EOF
-node script-seed-admin.js
-rm script-seed-admin.js
+node script-seed-initial.js
+rm script-seed-initial.js
 
 echo "Habilitando o Build de Produção (Isso pode demorar um pouco)..."
 npm run build
 
-echo "\n🌐 [6/7] Inicializando a Aplicação como processo resiliente (PM2)..."
-
+echo -e "\n🌐 [6/7] Inicializando a Aplicação como processo resiliente (PM2)..."
 pm2 delete "help-desk" > /dev/null 2>&1 || true
 pm2 start npm --name "help-desk" -- run start
 pm2 save
 pm2 startup
 
-echo "\n🛡️ [7/7] Configurando Reverso NGINX para hospedar com segurança na Porta 80..."
+echo -e "\n🛡️ [7/7] Configurando Reverso NGINX para hospedar com segurança na Porta 80..."
 cat <<EOF > /etc/nginx/sites-available/help-desk
 server {
     listen 80;
