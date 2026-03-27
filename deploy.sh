@@ -122,7 +122,7 @@ else
 fi
 
 # 4. Build & Segurança
-echo -e "\n🏗️  [4/7] Limpando vulnerabilidades e compilando aplicação..."
+echo -e "\n🏗️ [4/7] Limpando vulnerabilidades e compilando aplicação..."
 npm install
 echo "Aplicando patches de segurança automatizados (Audit Fix)..."
 npm audit fix --force || true
