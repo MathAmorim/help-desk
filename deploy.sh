@@ -67,8 +67,10 @@ echo -e "\n💻 [2/7] Sincronizando o Código Fonte..."
 git config --global --add safe.directory "$APP_DIR" || true
 if [ -d "$APP_DIR" ]; then
   cd $APP_DIR
-  echo "Baixando atualizações do Git..."
-  git pull || { echo -e "\e[31mErro no git pull. Verifique o acesso ao repositório.\e[0m"; exit 1; }
+  echo "Limpando mudanças locais e sincronizando com o repositório..."
+  git fetch --all
+  # Reseta o código local para bater 100% com o que está no Git (resolve conflito de package-lock)
+  git reset --hard @{u}
   git clean -fd -e .env -e public/uploads
 else
   echo "Clonando repositório inicial..."
