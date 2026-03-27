@@ -117,7 +117,18 @@ NEXTAUTH_URL="http://localhost:3000"
 EOF
 else
     echo -e "\n🗄️ [3/7] Carregando configurações de Banco de Dados existentes..."
-    # Apenas garante que os diretórios necessários existam
+    # Detecta o provider a partir da DATABASE_URL no .env (necessário após git reset)
+    if grep -q "postgresql://" "$ENV_PATH"; then
+        PROVIDER="postgresql"
+    elif grep -q "mysql://" "$ENV_PATH"; then
+        PROVIDER="mysql"
+    else
+        PROVIDER="sqlite"
+    fi
+    echo -e "⚙️ Provedor detectado via .env: \e[1m$PROVIDER\e[0m"
+    sed -i '/generator client {/,/}/ s/provider = ".*"/provider = "prisma-client-js"/' prisma/schema.prisma
+    sed -i '/datasource db {/,/}/ s/provider = ".*"/provider = "'$PROVIDER'"/' prisma/schema.prisma
+    
     mkdir -p public/uploads
 fi
 
