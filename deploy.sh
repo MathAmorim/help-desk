@@ -61,7 +61,15 @@ if [ "$IS_UPDATE" = false ]; then
     log_header "Topologia Base de Dados"
     echo "1) PostgreSQL (Recomendado Padrão Ouro)"
     echo "2) MySQL"
-    read -p "Opção (1 ou 2): " DB_OPTION
+    echo "3) SQLite (Apenas Teste/Homologação)"
+    while true; do
+        read -p "Opção (1, 2 ou 3): " DB_OPTION
+        if [[ "$DB_OPTION" == "1" || "$DB_OPTION" == "2" || "$DB_OPTION" == "3" ]]; then
+            break
+        else
+            log_error "Opção inválida. Digite 1, 2 ou 3."
+        fi
+    done
 
     log_header "Topologia de Acesso e SSL Edge"
     echo "Qual é o seu Domínio de Borda em produção? (Ex: suporte.empresa.com.br)"
@@ -136,7 +144,7 @@ if [ "$IS_UPDATE" = false ]; then
         sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE helpdesk TO helpdeskuser;" > /dev/null 2>&1
         DB_URL="postgresql://helpdeskuser:$DB_PASS@localhost:5432/helpdesk?schema=public"
         PROVIDER="postgresql"
-    else
+    elif [ "$DB_OPTION" == "2" ]; then
         log_info "Ativando Container Nativo MySQL"
         apt-get install -yqq mysql-server > /dev/null 2>&1
         mysql -e "CREATE DATABASE IF NOT EXISTS helpdesk;"
@@ -145,6 +153,10 @@ if [ "$IS_UPDATE" = false ]; then
         mysql -e "GRANT ALL PRIVILEGES ON helpdesk.* TO 'helpdeskuser'@'localhost';"
         DB_URL="mysql://helpdeskuser:$DB_PASS@localhost:3306/helpdesk"
         PROVIDER="mysql"
+    elif [ "$DB_OPTION" == "3" ]; then
+        log_info "Ativando Topologia Nativa SQLite (Stand-alone)"
+        DB_URL="file:./dev.db"
+        PROVIDER="sqlite"
     fi
 
     log_info "Configurando Prisma Providers ($PROVIDER)"
