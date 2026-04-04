@@ -43,11 +43,24 @@ else
     read -p "Opção (1 ou 2): " DB_OPTION
 
     echo ""
+    echo "==== CONFIGURAÇÃO DE DOMÍNIO E SSL ===="
+    echo "Qual é o seu Domínio/DNS em produção? (Ex: suporte.empresa.com.br)"
+    echo -e "Se você fornecer um domínio, o instalador tentará gerar um \e[1mCertificado SSL Gratuito (HTTPS)\e[0m via Certbot automaticamente."
+    read -p "Domínio (Deixe em branco se for acessar puro pelo IP): " APP_DOMAIN
+
+    echo ""
     echo "==== CREDENCIAIS DO PRIMEIRO ACESSO ===="
     echo -e "Este usuário será o \e[1mAdministrador\e[0m principal para você governar o painel inicial."
     read -p "Digite o email de Administrador inicial do sistema: " ADMIN_EMAIL
     read -s -p "Digite a senha do Administrador: " ADMIN_PASS
     echo ""
+
+    if [ -n "$APP_DOMAIN" ]; then
+        BASE_URL="https://$APP_DOMAIN"
+    else
+        PUBLIC_IP=$(curl -s ifconfig.me || echo "localhost")
+        BASE_URL="http://$PUBLIC_IP"
+    fi
 fi
 
 # 1. Infraestrutura
@@ -111,9 +124,9 @@ if [ "$IS_UPDATE" = false ]; then
     # Setup ENV
     echo "Configurando as variáveis de ambiente (.env)..."
     cat <<EOF > .env
-DATABASE_URL="$DB_URL"
-NEXTAUTH_SECRET="$(openssl rand -base64 32)"
-NEXTAUTH_URL="http://localhost:3000"
+DATABASE_URL="\$DB_URL"
+NEXTAUTH_SECRET="\$(openssl rand -base64 32)"
+NEXTAUTH_URL="\$BASE_URL"
 EOF
 else
     echo -e "\n🗄️ [3/7] Carregando configurações de Banco de Dados existentes..."
@@ -216,16 +229,16 @@ if [ ! -f "/etc/nginx/sites-available/help-desk" ]; then
     cat <<EOF > /etc/nginx/sites-available/help-desk
 server {
     listen 80;
-    server_name _;
+    server_name \${APP_DOMAIN:-_};
     location / {
         proxy_pass http://localhost:3000;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_cache_bypass \$http_upgrade;
+        proxy_set_header Upgrade \\\$http_upgrade;
+        proxy_set_header Host \\\$host;
+        proxy_set_header X-Real-IP \\\$remote_addr;
+        proxy_set_header X-Forwarded-For \\\$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \\\$scheme;
+        proxy_cache_bypass \\\$http_upgrade;
     }
 }
 EOF
@@ -236,6 +249,18 @@ else
     echo -e "\n🛡️ [7/7] NGINX já configurado. Reiniciando por segurança..."
     systemctl restart nginx
 fi
+
+# 8. Certificado SSL Gratuito (Certbot)
+if [ -n "$APP_DOMAIN" ]; then
+    echo -e "\n🔒 [8/8] Provisionando Certificado SSL Let's Encrypt para $APP_DOMAIN..."
+    if ! command -v certbot &> /dev/null; then
+        apt-get install -y certbot python3-certbot-nginx
+    fi
+    echo "Executando processo da Autoridade Certificadora..."
+    certbot --nginx -d "$APP_DOMAIN" --non-interactive --agree-tos -m "$ADMIN_EMAIL" || true
+    echo -e "\e[0;32m✓ SSL Instalado com Sucesso. Trafego HTTPS Ativo!\e[0m"
+fi
+
 echo "======================================================"
 echo -e "\n\e[0;32m🏆 PROCESSO CONCLUÍDO COM SUCESSO!\e[0m"
 echo "======================================================"
