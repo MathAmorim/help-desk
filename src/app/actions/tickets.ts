@@ -25,14 +25,22 @@ export async function createTicket(data: {
     });
     const prioridade = categoryRecord ? categoryRecord.prioridadePadrao : "BAIXA";
 
+    if (data.titulo?.length > 150) throw new Error("Título não pode ter mais de 150 caracteres.");
+    if (data.descricao?.length > 10000) throw new Error("Descrição excede 10.000 caracteres. Por favor, anexe um arquivo para logs muito extensos.");
+    if (data.contatoOpcional && data.contatoOpcional.length > 150) throw new Error("Contato opcional excede 150 caracteres.");
+
+    const cleanTitle = data.titulo.replace(/\0/g, "");
+    const cleanDesc = data.descricao.replace(/\0/g, "");
+    const cleanContato = data.contatoOpcional ? data.contatoOpcional.replace(/\0/g, "") : undefined;
+
     const ticket = await prisma.ticket.create({
         data: {
-            titulo: data.titulo,
-            descricao: data.descricao,
+            titulo: cleanTitle,
+            descricao: cleanDesc,
             categoria: data.categoria,
             prioridade,
             departamento: data.departamento,
-            contatoOpcional: data.contatoOpcional,
+            contatoOpcional: cleanContato,
             paraOutraPessoa: data.paraOutraPessoa,
             solicitanteId: session.user.id,
             attachments: data.attachmentIds && data.attachmentIds.length > 0 ? {
@@ -179,6 +187,11 @@ export async function addComment(ticketId: string, texto: string, isInterno: boo
         throw new Error("Usuários não podem criar notas internas");
     }
 
+    if (texto?.length > 10000) {
+        throw new Error("Comentário excede 10.000 caracteres. Por favor opte por anexar um arquivo para logs enormes.");
+    }
+    const cleanTexto = texto.replace(/\0/g, "");
+
     const resultComment = await prisma.$transaction(async (tx) => {
         // Se for marcado como solução, temos que garantir que o ticket não foi fechado correntemente por outra thread
         if (isSolucao && session.user.role !== "USUARIO") {
@@ -190,7 +203,7 @@ export async function addComment(ticketId: string, texto: string, isInterno: boo
 
         const comment = await tx.comment.create({
             data: {
-                texto,
+                texto: cleanTexto,
                 isInterno,
                 isSolucao: isSolucao || false,
                 ticketId,
