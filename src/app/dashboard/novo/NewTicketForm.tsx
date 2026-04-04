@@ -14,11 +14,13 @@ import Link from "next/link";
 
 import { uploadFile } from "@/app/actions/upload";
 
-export default function NewTicketForm({ categorias, userSetor = "" }: { categorias: any[], userSetor?: string }) {
+export default function NewTicketForm({ categorias, userSetor = "", userRole = "USUARIO", existingSetores = [] }: { categorias: any[], userSetor?: string, userRole?: string, existingSetores?: string[] }) {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<string>("");
+
+    const podeEditarDepartamento = userRole === "ADMIN" || userRole === "SUPORTE" || !userSetor;
 
     const categoryObj = categorias.find(c => c.nome === selectedCategory);
     const dynamicPlaceholder = categoryObj?.placeholder || "Descreva o que estava tentando fazer, o que aconteceu e mensagens de erro (se houver).";
@@ -103,15 +105,23 @@ export default function NewTicketForm({ categorias, userSetor = "" }: { categori
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="departamento">Seu Departamento</Label>
+                                <Label htmlFor="departamento">Departamento Solicitante</Label>
                                 <Input
                                     id="departamento"
                                     name="departamento"
+                                    list="setores-list"
                                     placeholder="Ex: Financeiro, RH, Comercial"
                                     defaultValue={userSetor}
-                                    readOnly={!!userSetor}
-                                    className={userSetor ? "bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-not-allowed border-slate-200 dark:border-slate-700 pointer-events-none" : ""}
+                                    readOnly={!podeEditarDepartamento}
+                                    className={!podeEditarDepartamento ? "bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-not-allowed border-slate-200 dark:border-slate-700 pointer-events-none" : "bg-white dark:bg-slate-900"}
                                 />
+                                {podeEditarDepartamento && (
+                                    <datalist id="setores-list">
+                                        {existingSetores.map(setor => (
+                                            <option key={setor} value={setor} />
+                                        ))}
+                                    </datalist>
+                                )}
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="contatoOpcional">Telefone ou Ramal (Apenas Números)</Label>

@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import NewUserButton from "./NewUserButton";
 import ResetUserButton from "./ResetUserButton";
 import EditUserButton from "./EditUserButton";
-
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 export default async function AdminUsersPage() {
     const session = await getServerSession(authOptions);
 
@@ -45,7 +46,14 @@ export default async function AdminUsersPage() {
                         Visualização dos usuários cadastrados no sistema.
                     </p>
                 </div>
-                <NewUserButton sectors={sectors} />
+                <div className="flex items-center gap-2">
+                    <Link href="/dashboard/admin/setores">
+                        <Button variant="outline" className="h-10 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900 bg-indigo-50/50 dark:bg-indigo-950/20 hover:bg-indigo-100 dark:hover:bg-indigo-900">
+                            Gerenciar Setores
+                        </Button>
+                    </Link>
+                    <NewUserButton sectors={sectors} />
+                </div>
             </div>
 
             <Card className="shadow-sm border-slate-200 dark:border-slate-800">

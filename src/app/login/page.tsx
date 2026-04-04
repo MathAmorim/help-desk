@@ -82,6 +82,8 @@ export default function LoginPage() {
                                 <Label htmlFor="identifier">CPF</Label>
                                 <Input
                                     id="identifier"
+                                    name="username"
+                                    autoComplete="username"
                                     type="text"
                                     placeholder="123.456.789-00"
                                     value={identifier}
@@ -116,6 +118,8 @@ export default function LoginPage() {
                                 </div>
                                 <PasswordInput
                                     id="password"
+                                    name="password"
+                                    autoComplete="current-password"
                                     placeholder="••••••••"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}

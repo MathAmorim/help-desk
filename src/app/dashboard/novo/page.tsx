@@ -21,5 +21,15 @@ export default async function NovoChamadoPage() {
         orderBy: { nome: 'asc' }
     });
 
-    return <NewTicketForm categorias={categorias} userSetor={userSetor} />;
+    const distinctSetores = await (prisma.user as any).findMany({
+        where: { setor: { not: null } },
+        select: { setor: true },
+        distinct: ['setor']
+    });
+    const existingSetores = distinctSetores
+        .map((u: any) => u.setor)
+        .filter((s: string) => s && s.trim() !== "")
+        .sort();
+
+    return <NewTicketForm categorias={categorias} userSetor={userSetor} userRole={session?.user?.role} existingSetores={existingSetores} />;
 }

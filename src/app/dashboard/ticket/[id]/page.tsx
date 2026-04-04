@@ -12,6 +12,7 @@ import TicketManager from "./TicketManager";
 import { TicketRating } from "./TicketRating";
 import { timeAgo } from "@/lib/utils";
 import PrintTicketButton from "./PrintTicketButton";
+import ShareTicketButton from "./ShareTicketButton";
 import { notFound } from "next/navigation";
 export default async function TicketDetailsPage({ params }: { params: Promise<{ id: string }> }) {
     const session = await getServerSession(authOptions);
@@ -69,7 +70,13 @@ export default async function TicketDetailsPage({ params }: { params: Promise<{ 
                         </p>
                     </div>
                 </div>
-                <PrintTicketButton />
+                <div className="flex items-center gap-2">
+                    <ShareTicketButton
+                        ticketIdHex={ticket.id.substring(ticket.id.length - 6).toUpperCase()}
+                        ticketTitle={ticket.titulo}
+                    />
+                    <PrintTicketButton />
+                </div>
             </div>
 
             {ticket.status === "RESOLVIDO" && ticket.solicitanteId === session.user.id && !ticket.notaAvaliacao && (
