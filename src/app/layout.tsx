@@ -10,11 +10,14 @@ const inter = Inter({
 import { Providers } from "@/components/Providers";
 import { Toaster } from "@/components/ui/sonner";
 
+export const viewport = {
+  themeColor: "#000000",
+};
+
 export const metadata: Metadata = {
   title: "Portal de Chamados",
   description: "Sistema para abertura e gerenciamento de chamados da Prefeitura Municipal de Acreúna.",
   manifest: "/manifest.json",
-  themeColor: "#000000",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

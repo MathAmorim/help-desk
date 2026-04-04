@@ -244,7 +244,10 @@ export async function addComment(ticketId: string, texto: string, isInterno: boo
 
             await tx.ticket.update({
                 where: { id: ticketId },
-                data: updateData
+                data: {
+                    ...updateData,
+                    dataResolucao: new Date()
+                }
             });
             detalhesLog = updateData.responsavelId
                 ? "Chamado auto-atribuído e marcado como resolvido através de solução."
@@ -309,6 +312,13 @@ export async function updateTicketStatus(ticketId: string, status: string, respo
         if (finalResponsavelId) {
             updateData.responsavelId = finalResponsavelId;
             detalhes = `Chamado assumido e status alterado para ${status}.`;
+        }
+
+        if (status !== "ABERTO" && check.status === "ABERTO" && !check.dataAssuncao) {
+            updateData.dataAssuncao = new Date();
+        }
+        if (status === "RESOLVIDO") {
+            updateData.dataResolucao = new Date();
         }
 
         const updatedTicket = await tx.ticket.update({
@@ -480,7 +490,11 @@ export async function avaliarReabertura(ticketId: string, aceitar: boolean) {
     if (aceitar) {
         await prisma.ticket.update({
             where: { id: ticketId },
-            data: { status: "EM_ANDAMENTO", aguardandoReabertura: false }
+            data: { 
+                status: "EM_ANDAMENTO", 
+                aguardandoReabertura: false,
+                dataResolucao: null // Resetar resolução ao reabrir
+            }
         });
         await prisma.comment.create({
             data: { texto: "✅ A solicitação de reabertura foi ACEITA pela equipe de suporte. O chamado encontra-se Em Andamento novamente.", isInterno: false, ticketId, autorId: session.user.id }
@@ -625,7 +639,11 @@ export async function encerrarChamadoUsuario(ticketId: string, motivo?: string) 
 
         const updatedTicket = await tx.ticket.update({
             where: { id: ticketId },
-            data: { status: "RESOLVIDO", encerradoPeloAutor: true } as any
+            data: { 
+                status: "RESOLVIDO", 
+                encerradoPeloAutor: true,
+                dataResolucao: new Date()
+            } as any
         });
 
         await tx.auditLog.create({
@@ -666,4 +684,39 @@ export async function encerrarChamadoUsuario(ticketId: string, motivo?: string) 
     revalidatePath(`/dashboard/ticket/${ticketId}`);
     revalidatePath("/dashboard");
     return t;
+}
+
+export async function getSLASettings() {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user || session.user.role !== "ADMIN") {
+        throw new Error("Não autorizado");
+    }
+
+    return prisma.setting.upsert({
+        where: { id: "global" },
+        update: {},
+        create: {
+            id: "global",
+            tempoMaximoAssuncao: 24,
+            tempoMaximoConclusao: 72
+        }
+    });
+}
+
+export async function updateSLASettings(data: { tempoMaximoAssuncao: number; tempoMaximoConclusao: number }) {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user || session.user.role !== "ADMIN") {
+        throw new Error("Não autorizado");
+    }
+
+    const settings = await prisma.setting.update({
+        where: { id: "global" },
+        data: {
+            tempoMaximoAssuncao: data.tempoMaximoAssuncao,
+            tempoMaximoConclusao: data.tempoMaximoConclusao
+        }
+    });
+
+    revalidatePath("/dashboard/admin/sla");
+    return settings;
 }

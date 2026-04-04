@@ -60,6 +60,10 @@ model Ticket {
   notaAvaliacao       Int?
   comentarioAvaliacao String?
   
+  dataAssuncao  DateTime?
+  dataResolucao DateTime?
+  dataFechamento DateTime?
+  
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -151,4 +155,11 @@ model SnakeScore {
   user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   guestName String?
   createdAt DateTime @default(now())
+}
+
+model Setting {
+  id                   String   @id @default("global")
+  tempoMaximoAssuncao  Int      @default(24) // Horas
+  tempoMaximoConclusao Int      @default(72) // Horas
+  updatedAt            DateTime @updatedAt
 }

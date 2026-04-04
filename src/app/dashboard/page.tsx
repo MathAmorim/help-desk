@@ -36,6 +36,10 @@ export default async function DashboardPage({
     const categoriasDb = await prisma.category.findMany({ select: { nome: true }, orderBy: { nome: "asc" } });
     const categoriasList = categoriasDb.map((c: any) => c.nome);
 
+    const settings = await prisma.setting.findUnique({ where: { id: "global" } });
+    const delayAssuncaoLimit = (settings?.tempoMaximoAssuncao || 24) * 60 * 60 * 1000;
+    const delayConclusaoLimit = (settings?.tempoMaximoConclusao || 72) * 60 * 60 * 1000;
+
     function renderStatusBadge(status: string) {
         switch (status) {
             case "ABERTO": return <Badge className="bg-blue-500 hover:bg-blue-600">Aberto</Badge>;
@@ -168,7 +172,15 @@ export default async function DashboardPage({
                                                 {ticket.encerradoPeloAutor ? (
                                                     <Badge className="bg-emerald-700 hover:bg-emerald-800 text-white">Encerrado pelo Autor</Badge>
                                                 ) : (
-                                                    renderStatusBadge(ticket.status)
+                                                    <div className="flex flex-col gap-1">
+                                                        {renderStatusBadge(ticket.status)}
+                                                        {ticket.status === "ABERTO" && (new Date().getTime() - new Date(ticket.createdAt).getTime() > delayAssuncaoLimit) && (
+                                                            <Badge variant="destructive" className="text-[10px] py-0 px-1 animate-pulse h-4 whitespace-nowrap">⏳ SLA ATRASADO</Badge>
+                                                        )}
+                                                        {ticket.status === "EM_ANDAMENTO" && (new Date().getTime() - new Date(ticket.createdAt).getTime() > delayConclusaoLimit) && (
+                                                            <Badge variant="destructive" className="text-[10px] py-0 px-1 animate-pulse h-4 whitespace-nowrap">🚨 SLA ATRASADO</Badge>
+                                                        )}
+                                                    </div>
                                                 )}
                                             </TableCell>
                                             <TableCell>
