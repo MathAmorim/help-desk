@@ -62,7 +62,29 @@ export const authOptions: NextAuthOptions = {
                 token.mustChangePassword = (user as any).mustChangePassword;
                 token.theme = (user as any).theme;
             }
-            // Permite atualizar a flag na sessão após a troca (update via useSession)
+
+            // Real-Time Validation: Verifica no banco a cada ciclo se a conta foi rebaixada ou excluída.
+            if (token.id) {
+                try {
+                    const dbUser = await prisma.user.findUnique({
+                        where: { id: token.id as string },
+                        select: { role: true, mustChangePassword: true }
+                    });
+
+                    if (!dbUser) {
+                        // Usuário foi deletado enquanto estava logado. Invalida o token (Logout forçado).
+                        return {} as any;
+                    }
+
+                    // Sincroniza a Role em tempo real (ex: Se um Admin for rebaixado para USUARIO)
+                    token.role = dbUser.role;
+                    token.mustChangePassword = dbUser.mustChangePassword;
+                } catch (err) {
+                    // Ignora em caso de desconexão momentânea do banco para não deslogar a frota inteira atoa.
+                }
+            }
+
+            // Permite atualizar a flag na sessão após a troca manual (update via useSession)
             if (trigger === "update") {
                 if (session?.mustChangePassword !== undefined) token.mustChangePassword = session.mustChangePassword;
                 if (session?.theme !== undefined) token.theme = session.theme;
