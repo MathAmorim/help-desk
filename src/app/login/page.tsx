@@ -46,7 +46,7 @@ export default function LoginPage() {
 
     if (status === "loading" || status === "authenticated") {
         return (
-            <div className="flex h-screen w-full items-center justify-center bg-slate-50">
+            <div className="flex h-[100dvh] w-full items-center justify-center bg-slate-50">
                 <Loader2 className="h-8 w-8 animate-spin text-slate-800" />
             </div>
         );
@@ -54,7 +54,7 @@ export default function LoginPage() {
 
     return (
         <div
-            className="flex min-h-screen w-full flex-col bg-cover bg-center bg-no-repeat bg-[url('/image/acreuna_blueprint-ph.svg')] md:bg-[url('/image/acreuna_blueprint-dt.svg')]"
+            className="flex min-h-[100dvh] w-full flex-col bg-cover bg-center bg-no-repeat bg-[url('/image/acreuna_blueprint-ph.svg')] md:bg-[url('/image/acreuna_blueprint-dt.svg')]"
         >
             <div className="flex flex-1 items-center justify-center p-4 dark:bg-slate-950/80 ">
                 <Card className="w-full max-w-md shadow-2xl border-t-4 border-t-black">
@@ -93,8 +93,18 @@ export default function LoginPage() {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <Label htmlFor="password">Senha</Label>
+                                <Label htmlFor="password">Senha</Label>
+                                <PasswordInput
+                                    id="password"
+                                    name="password"
+                                    autoComplete="current-password"
+                                    placeholder="••••••••"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                    className="bg-white"
+                                />
+                                <div className="flex justify-end">
                                     <Dialog>
                                         <DialogTrigger className="px-0 h-auto text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200" type="button">
                                             Esqueceu a senha?
@@ -116,16 +126,6 @@ export default function LoginPage() {
                                         </DialogContent>
                                     </Dialog>
                                 </div>
-                                <PasswordInput
-                                    id="password"
-                                    name="password"
-                                    autoComplete="current-password"
-                                    placeholder="••••••••"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                    className="bg-white"
-                                />
                             </div>
                         </CardContent>
                         <CardFooter className="flex flex-col gap-4">

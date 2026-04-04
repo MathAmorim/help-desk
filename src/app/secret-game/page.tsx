@@ -132,7 +132,7 @@ export default function SnakeGame() {
     };
 
     return (
-        <div className="min-h-screen bg-neutral-950 flex flex-col items-center justify-center p-6 text-white font-mono">
+        <div className="min-h-[100dvh] bg-neutral-950 flex flex-col items-center justify-center p-6 text-white font-mono">
             <h1 className="text-4xl font-black mb-8 tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-blue-500 flex items-center gap-3">
                 <Gamepad2 className="h-10 w-10 text-emerald-400" />
                 SNAKE PROTOCOL

@@ -13,6 +13,13 @@ import { Toaster } from "@/components/ui/sonner";
 export const metadata: Metadata = {
   title: "Portal de Chamados",
   description: "Sistema para abertura e gerenciamento de chamados da Prefeitura Municipal de Acreúna.",
+  manifest: "/manifest.json",
+  themeColor: "#000000",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Portal de Chamados",
+  },
 };
 
 export default function RootLayout({
@@ -23,7 +30,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body
-        className={`${inter.className} antialiased min-h-screen`}
+        className={`${inter.className} antialiased min-h-[100dvh]`}
       >
         <Providers>{children}</Providers>
         <Toaster position="bottom-right" />

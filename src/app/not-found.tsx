@@ -9,7 +9,7 @@ export default function NotFound() {
     const router = useRouter();
 
     return (
-        <div className="min-h-screen w-full flex flex-col items-center justify-center p-4 bg-black text-red-500 font-mono">
+        <div className="min-h-[100dvh] w-full flex flex-col items-center justify-center p-4 bg-black text-red-500 font-mono">
             <div className="max-w-2xl w-full border-2 border-red-900 bg-red-950/10 p-8 space-y-8 relative overflow-hidden shadow-[0_0_50px_rgba(153,27,27,0.2)]">
                 {/* Efeito de Scanline */}
                 <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-50 bg-[length:100%_2px,3px_100%]"></div>

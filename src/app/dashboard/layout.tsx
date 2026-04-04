@@ -23,7 +23,7 @@ export default async function DashboardLayout({
     }
 
     return (
-        <div className="flex min-h-screen w-full flex-col">
+        <div className="flex min-h-[100dvh] w-full flex-col">
             <header className="sticky top-0 z-30 flex h-auto sm:h-16 flex-col sm:flex-row items-center justify-between border-b bg-background px-4 sm:px-6 py-2 sm:py-0 shadow-sm gap-2 sm:gap-0 print:hidden">
 
                 {/* Lado Esquerdo (Logo + Links da Navegação) */}

@@ -17,7 +17,7 @@ export default async function TrocarSenhaPage() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+        <div className="min-h-[100dvh] bg-slate-50 flex flex-col items-center justify-center p-4">
             <div className="max-w-md w-full text-center mb-6">
                 <div className="h-16 w-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Lock className="h-8 w-8 text-amber-600" />
