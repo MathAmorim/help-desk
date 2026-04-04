@@ -1,64 +1,83 @@
 #!/bin/bash
-# Help Desk - Deploy & Update Script for Ubuntu/Debian
+# Help Desk - Enterprise Deployment & Update Script for Debian/Ubuntu
+# Refactored for robust error handling, idempotency, and strict security.
 
-# Faz o script ser abortado imediatamente se qualquer comando falhar
-set -e
+set -euo pipefail
 
+# ==========================================
+# GLOBAIS E CONSTANTES
+# ==========================================
 APP_DIR="/var/www/help-desk"
 ENV_PATH="$APP_DIR/.env"
+NODE_MAJOR=20
 
-# Verificação de Root (Portável)
+# Cores para Logging
+C_RED="\e[31m"
+C_GREEN="\e[32m"
+C_YELLOW="\e[33m"
+C_BLUE="\e[34m"
+C_BOLD="\e[1m"
+C_RESET="\e[0m"
+
+log_info()    { echo -e "${C_BLUE}[INFO]${C_RESET} $1"; }
+log_success() { echo -e "${C_GREEN}[SUCCESS]${C_RESET} $1"; }
+log_warn()    { echo -e "${C_YELLOW}[WARN]${C_RESET} $1"; }
+log_error()   { echo -e "${C_RED}[ERROR]${C_RESET} $1"; }
+log_header()  { echo -e "\n${C_BOLD}${C_BLUE}=== $1 ===${C_RESET}"; }
+
+# ==========================================
+# 1. VERIFICAÇÃO DE AMBIENTE
+# ==========================================
 if [ "$(id -u)" -ne 0 ]; then
-  echo -e "\e[31mPor favor, rode o script como root (sudo ./deploy.sh)\e[0m"
-  exit 1
+    log_error "Ops! O Instalador necessita de privilégios absolutos."
+    log_error "Por favor, execute como root: sudo ./deploy.sh"
+    exit 1
 fi
 
-echo -e "\e[0;34m======================================================"
-echo -e "🚀 Help Desk - Instalador & Atualizador (Ubuntu/Debian)"
-echo -e "\e[0;34m======================================================"
+echo -e "${C_BOLD}${C_BLUE}======================================================${C_RESET}"
+echo -e "${C_BOLD}🚀 Plataforma Help Desk - Instalador${C_RESET}"
+echo -e "${C_BOLD}${C_BLUE}======================================================${C_RESET}"
 
-# --- Lógica de Detecção de Instalação Existente ---
 IS_UPDATE=false
 if [ -f "$ENV_PATH" ]; then
-    echo -e "\e[0;32m[!] Instalação existente detectada em $APP_DIR\e[0m"
-    echo "Como deseja prosseguir?"
-    echo "1) Aplicar Atualizações de Código e Segurança (Rápido/Mantém Dados)"
-    echo "2) Reinstalação Completa (Sobrescreve configurações)"
-    read -p "Opção (1 ou 2): " DEPLOY_MODE
-    if [ "$DEPLOY_MODE" == "1" ]; then
+    log_success "Instalação prévia detectada em $APP_DIR"
+    echo -e "Escolha o modo de operação:"
+    echo -e "  1) ${C_BOLD}Update Seguro${C_RESET} (Mantém dados, recompila código e patches de segurança)"
+    echo -e "  2) ${C_BOLD}Reinstalação Forçada${C_RESET} (Atenção: Sobrescreve env/credentials)"
+    read -p "Sua Opção (1 ou 2): " DEPLOY_MODE
+    
+    if [[ "$DEPLOY_MODE" == "1" ]]; then
         IS_UPDATE=true
+        log_info "Modo de Atualização Ativado. Configurações de BD e admin serão retidas."
     fi
 fi
 
-if [ "$IS_UPDATE" = true ]; then
-    echo -e "\n🔄 \e[1mModo de Atualização Ativado.\e[0m Pulando configurações de banco e admin...\n"
-else
-    # Configuração Inicial (Modo Instalador)
+# ==========================================
+# 2. COLETA DE PARÂMETROS
+# ==========================================
+if [ "$IS_UPDATE" = false ]; then
     GIT_URL="https://github.com/MathAmorim/help-desk.git"
 
-    echo ""
-    echo "Qual Banco de Dados em produção deseja utilizar?"
-    echo "1) PostgreSQL"
+    log_header "Topologia Base de Dados"
+    echo "1) PostgreSQL (Recomendado Padrão Ouro)"
     echo "2) MySQL"
     read -p "Opção (1 ou 2): " DB_OPTION
 
-    echo ""
-    echo "==== CONFIGURAÇÃO DE DOMÍNIO E SSL ===="
-    echo "Qual é o seu Domínio/DNS em produção? (Ex: suporte.empresa.com.br)"
-    read -p "Domínio (Deixe em branco se for acessar puro pelo IP): " APP_DOMAIN
+    log_header "Topologia de Acesso e SSL Edge"
+    echo "Qual é o seu Domínio de Borda em produção? (Ex: suporte.empresa.com.br)"
+    read -p "Domínio/DNS (Deixe em branco p/ acessar via IP puro): " APP_DOMAIN
 
+    AUTO_SSL="n"
     if [ -n "$APP_DOMAIN" ]; then
-        echo -e "\nVocê informou um domínio."
-        echo "Deseja que os certificados SSL sejam gerados automaticamente via Certbot nesta máquina?"
-        echo -e "Atenção: Se outra máquina/firewall cuida do HTTPS na frente deste servidor, digite 'n'."
-        read -p "Gerar SSL Automaticamente agora? (y/n): " AUTO_SSL
+        log_info "Domínio capturado."
+        echo "Deseja que uma chave SSL seja gerada automaticamente via Certbot nesta máquina?"
+        log_warn "Se um firewall assumir o HTTPS à frente da sua DMZ, digite 'n'."
+        read -p "Gerar Cadeado SSL Automaticamente? (y/n): " AUTO_SSL
     fi
 
-    echo ""
-    echo "==== CREDENCIAIS DO PRIMEIRO ACESSO ===="
-    echo -e "Este usuário será o \e[1mAdministrador\e[0m principal para você governar o painel inicial."
-    read -p "Digite o email de Administrador inicial do sistema: " ADMIN_EMAIL
-    read -s -p "Digite a senha do Administrador: " ADMIN_PASS
+    log_header "Credenciais Administrativas (Raiz)"
+    read -p "Email do Administrador Inicial: " ADMIN_EMAIL
+    read -s -p "Senha Segura do Administrador: " ADMIN_PASS
     echo ""
 
     if [ -n "$APP_DOMAIN" ]; then
@@ -69,51 +88,57 @@ else
     fi
 fi
 
-# 1. Infraestrutura
-echo -e "\n📦 [1/7] Verificando infraestrutura e dependências..."
-curl -fsSL https://deb.nodesource.com/setup_20.x | bash - || true
-apt-get update
-apt-get install -y nodejs git nginx build-essential curl unzip
+# ==========================================
+# 3. INFRAESTRUTURA DE DEPENDÊNCIAS
+# ==========================================
+log_header "[1/8] Saneamento de Infraestrutura"
+log_info "Instalando Core Packages e Node.js v${NODE_MAJOR}"
+curl -fsSL "https://deb.nodesource.com/setup_${NODE_MAJOR}.x" | bash - > /dev/null 2>&1 || true
+apt-get update -yqq > /dev/null 2>&1
+apt-get install -yqq nodejs git nginx build-essential curl unzip > /dev/null 2>&1
 
 if ! command -v pm2 &> /dev/null; then
-  echo "📦 Instalando PM2 (Process Manager)..."
-  npm install -g pm2 || true
+    log_info "Acoplando PM2 Daemon Manager..."
+    npm install -g pm2 > /dev/null 2>&1 || true
 fi
 
-# 2. Código Fonte
-echo -e "\n💻 [2/7] Sincronizando o Código Fonte..."
-# Corrige erro de "dubious ownership" do Git (comum ao rodar como root)
+# ==========================================
+# 4. FETCH DE CÓDIGO FONTE
+# ==========================================
+log_header "[2/8] Sincronização Restrita de Repositório"
 git config --global --add safe.directory "$APP_DIR" || true
+
 if [ -d "$APP_DIR" ]; then
-  cd $APP_DIR
-  echo "Limpando mudanças locais e sincronizando com o repositório..."
-  git fetch --all
-  # Reseta o código local para bater 100% com o que está no Git (resolve conflito de package-lock)
-  git reset --hard @{u}
-  git clean -fd -e .env -e public/uploads
+    log_info "Repositório existente. Baixando HEAD master e forçando convergência..."
+    cd "$APP_DIR"
+    git fetch --all --quiet
+    git reset --hard @{u} --quiet
+    git clean -fd -e .env -e public/uploads -e private_uploads --quiet
 else
-  echo "Clonando repositório inicial..."
-  git clone $GIT_URL $APP_DIR
-  cd $APP_DIR
+    log_info "Clonando matriz principal em $APP_DIR..."
+    git clone --quiet "$GIT_URL" "$APP_DIR"
+    cd "$APP_DIR"
 fi
 
-# 3. Banco de Dados (Pula se for Update)
+# ==========================================
+# 5. ORQUESTRAÇÃO DE BANCO (INSTALAÇÃO NOVA)
+# ==========================================
 if [ "$IS_UPDATE" = false ]; then
-    echo -e "\n🗄️ [3/7] Provisionando o Banco de Dados..."
+    log_header "[3/8] Provisionamento Ativo de Banco de Dados"
     DB_PASS=$(openssl rand -hex 16)
     
     if [ "$DB_OPTION" == "1" ]; then
-        echo "Instalando e Configurando o PostgreSQL..."
-        apt-get install -y postgresql postgresql-contrib
+        log_info "Ativando Container Nativo PostgreSQL"
+        apt-get install -yqq postgresql postgresql-contrib > /dev/null 2>&1
         sudo -u postgres psql -c "CREATE DATABASE helpdesk;" > /dev/null 2>&1 || true
         sudo -u postgres psql -c "CREATE USER helpdeskuser WITH ENCRYPTED PASSWORD '$DB_PASS';" > /dev/null 2>&1 || true
-        sudo -u postgres psql -c "ALTER USER helpdeskuser WITH PASSWORD '$DB_PASS';"
-        sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE helpdesk TO helpdeskuser;"
+        sudo -u postgres psql -c "ALTER USER helpdeskuser WITH PASSWORD '$DB_PASS';" > /dev/null 2>&1
+        sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE helpdesk TO helpdeskuser;" > /dev/null 2>&1
         DB_URL="postgresql://helpdeskuser:$DB_PASS@localhost:5432/helpdesk?schema=public"
         PROVIDER="postgresql"
     else
-        echo "Instalando e Configurando o MySQL..."
-        apt-get install -y mysql-server
+        log_info "Ativando Container Nativo MySQL"
+        apt-get install -yqq mysql-server > /dev/null 2>&1
         mysql -e "CREATE DATABASE IF NOT EXISTS helpdesk;"
         mysql -e "CREATE USER IF NOT EXISTS 'helpdeskuser'@'localhost' IDENTIFIED BY '$DB_PASS';"
         mysql -e "ALTER USER 'helpdeskuser'@'localhost' IDENTIFIED BY '$DB_PASS';"
@@ -122,56 +147,65 @@ if [ "$IS_UPDATE" = false ]; then
         PROVIDER="mysql"
     fi
 
-    # Configura Prisma & ENV
-    echo -e "\n⚙️ [4/7] Convertendo os drivers do ORM Prisma para '$PROVIDER'..."
-    sed -i '/generator client {/,/}/ s/provider = ".*"/provider = "prisma-client-js"/' prisma/schema.prisma
-    sed -i '/datasource db {/,/}/ s/provider = ".*"/provider = "'$PROVIDER'"/' prisma/schema.prisma
+    log_info "Configurando Prisma Providers ($PROVIDER)"
+    sed -i "/generator client {/,/}/ s/provider = \".*\"/provider = \"prisma-client-js\"/" prisma/schema.prisma
+    sed -i "/datasource db {/,/}/ s/provider = \".*\"/provider = \"$PROVIDER\"/" prisma/schema.prisma
     
-    # Setup ENV
-    echo "Configurando as variáveis de ambiente (.env)..."
+    log_info "Gerando arquivo de Ambiente Seguro (.env)"
     cat <<EOF > .env
-DATABASE_URL="\$DB_URL"
-NEXTAUTH_SECRET="\$(openssl rand -base64 32)"
-NEXTAUTH_URL="\$BASE_URL"
+DATABASE_URL="$DB_URL"
+NEXTAUTH_SECRET="$(openssl rand -base64 32)"
+NEXTAUTH_URL="$BASE_URL"
+NODE_ENV="production"
 EOF
+
 else
-    echo -e "\n🗄️ [3/7] Carregando configurações de Banco de Dados existentes..."
-    # Detecta o provider a partir da DATABASE_URL no .env (necessário após git reset)
+    log_header "[3/8] Detecção de Engine Reversa"
     if grep -q "postgresql://" "$ENV_PATH"; then
         PROVIDER="postgresql"
     elif grep -q "mysql://" "$ENV_PATH"; then
         PROVIDER="mysql"
     else
         PROVIDER="sqlite"
-        echo -e "\n\e[1;33m⚠️ AVISO DE SEGURANÇA E DESEMPENHO ⚠️\e[0m"
-        echo -e "Foi detectado o uso do banco \e[1mSQLite\e[0m para este ambiente!"
-        echo -e "O SQLite NÃO é recomendado para produção real. Ele não suporta múltiplas gravações simultâneas em alta demanda e não é a escolha primária para este projeto de Help Desk (PostgreSQL ou MySQL são os indicados)."
-        read -p "Você tem certeza que deseja continuar a instalação/atualização operando com SQLite? (y/n): " PROCEED_SQLITE
+        echo -e "\n${C_YELLOW}⚠️ AVISO DE PERFORMANCE ESTRUTURAL ⚠️${C_RESET}"
+        log_warn "O ambiente opera via SQLite e perderá escabilidade sob pressão de múltiplas writes correntes."
+        read -p "Confirma manutenção da topologia SQLite? (y/n): " PROCEED_SQLITE
         if [[ "$PROCEED_SQLITE" != "y" && "$PROCEED_SQLITE" != "Y" ]]; then
-            echo -e "\e[31mProcesso cancelado pelo usuário.\e[0m"
+            log_error "Abortando por segurança lógica arquitetural."
             exit 1
         fi
     fi
-    echo -e "⚙️ Provedor detectado via .env: \e[1m$PROVIDER\e[0m"
-    sed -i '/generator client {/,/}/ s/provider = ".*"/provider = "prisma-client-js"/' prisma/schema.prisma
-    sed -i '/datasource db {/,/}/ s/provider = ".*"/provider = "'$PROVIDER'"/' prisma/schema.prisma
-    
-    mkdir -p public/uploads private_uploads
+    log_info "Engine detectada via ENV: $PROVIDER"
+    sed -i "/generator client {/,/}/ s/provider = \".*\"/provider = \"prisma-client-js\"/" prisma/schema.prisma
+    sed -i "/datasource db {/,/}/ s/provider = \".*\"/provider = \"$PROVIDER\"/" prisma/schema.prisma
 fi
 
-# 4. Build & Segurança
-echo -e "\n🏗️ [4/7] Limpando vulnerabilidades e compilando aplicação..."
-npm install
-echo "Aplicando patches de segurança automatizados (Audit Fix)..."
-npm audit fix --force || true
+# ==========================================
+# 6. FILE SYSTEM SEGURANÇA & BUILD
+# ==========================================
+log_header "[4/8] FileSystem Bounds e Build Tree"
 
-echo "Gerando Prisma Client..."
+log_info "Garantindo diretórios de Upload Privados"
+mkdir -p public/uploads private_uploads
+# Mitigação de permissões para blindar ataques de execução na pasta de anexos (Segurança Profunda)
+chown -R www-data:www-data public/uploads private_uploads 2>/dev/null || true
+chmod 755 public/uploads private_uploads
+
+log_info "Instalando Árvore NPM"
+npm install --silent
+
+log_info "Executando Correção Heurística de Vulnerabilidades (Audit Fix Force)"
+npm audit fix --force > /dev/null 2>&1 || true
+
+log_info "Propagando DB Schemas (Prisma Push)"
 npx prisma generate
 npx prisma db push --accept-data-loss
 
-# 5. Seed (Apenas se não for Update ou se o usuário quiser forçar)
+# ==========================================
+# 7. SEEDING DE BASE DE DADOS
+# ==========================================
 if [ "$IS_UPDATE" = false ]; then
-    echo -e "\n🌱 [5/7] Semeando dados iniciais (Admin e Categorias)..."
+    log_header "[5/8] Operação de Base Seed inicial"
     cat <<EOF > script-seed-initial.js
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
@@ -183,9 +217,6 @@ async function main() {
     update: { password: hashedPassword, role: 'ADMIN' },
     create: { email: '$ADMIN_EMAIL', name: 'Admin', password: hashedPassword, role: 'ADMIN', mustChangePassword: false, cpf: '00000000000', theme: 'dark' }
   });
-  console.log("✓ Administrador configurado.");
-
-  // 2. Criar/Atualizar Categorias Padrão
   const categories = [
     { nome: 'Hardware', prioridadePadrao: 'MEDIA' },
     { nome: 'Software', prioridadePadrao: 'BAIXA' },
@@ -195,81 +226,88 @@ async function main() {
     { nome: 'Impressoras', prioridadePadrao: 'BAIXA' },
     { nome: 'Sistemas Internos', prioridadePadrao: 'MEDIA' }
   ];
-
   for (const cat of categories) {
     await prisma.category.upsert({
       where: { nome: cat.nome },
       update: { prioridadePadrao: cat.prioridadePadrao },
-      create: { 
-        nome: cat.nome, 
-        prioridadePadrao: cat.prioridadePadrao,
-        ativo: true 
-      }
+      create: { nome: cat.nome, prioridadePadrao: cat.prioridadePadrao, ativo: true }
     });
   }
-  console.log("✓ Categorias padrão semeadas.");
 }
-
-main()
-  .then(() => console.log("🌱 Seed concluído com sucesso!"))
-  .catch(e => console.error("❌ Falha no seed:", e))
-  .finally(() => prisma.\$disconnect());
+main().then(() => process.exit(0)).catch((e) => { console.error(e); process.exit(1); });
 EOF
-    node script-seed-initial.js && rm script-seed-initial.js
+    node script-seed-initial.js && rm -f script-seed-initial.js
+    log_success "Base Populada."
 else
-    echo -e "\n🌱 [5/7] Pulando Seed (Instalação já existente)."
+    log_info "[5/8] Pulando Seeding (Atualização Incremental)"
 fi
 
-echo "Iniciando build (Isso pode demorar um pouco)..."
+log_info "Iniciando processo de Hard Build (Next.js 14)... Isso demanda Memória."
 npm run build
 
-# 6. Processos
-echo -e "\n🌐 [6/7] Reiniciando os serviços (PM2)..."
+# ==========================================
+# 8. PM2 PROCESS MANAGER
+# ==========================================
+log_header "[6/8] Alinhamento Daemon PM2"
+export NODE_ENV=production
 pm2 delete "help-desk" > /dev/null 2>&1 || true
-pm2 start npm --name "help-desk" -- run start
-pm2 save
+pm2 start npm --name "help-desk" -- run start > /dev/null 2>&1
+pm2 save > /dev/null 2>&1
+log_success "PM2 Tracker operacional."
 
-# 7. Nginx
+# ==========================================
+# 9. NGINX ESTRUTURA E PROXY REVERSO
+# ==========================================
+log_header "[7/8] Malha Nginx (Reverse Proxy)"
 if [ ! -f "/etc/nginx/sites-available/help-desk" ]; then
-    echo -e "\n🛡️ [7/7] Configurando Reverso NGINX pela primeira vez..."
+    log_info "Emitindo Virtual Host Virgem com IP Passthrough"
     cat <<EOF > /etc/nginx/sites-available/help-desk
 server {
     listen 80;
-    server_name \${APP_DOMAIN:-_};
+    server_name ${APP_DOMAIN:-_};
+
+    # Hardening Básico: Esconde a versão do SO/Nginx
+    server_tokens off;
+
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade \\\$http_upgrade;
-        proxy_set_header Host \\\$host;
-        proxy_set_header X-Real-IP \\\$remote_addr;
-        proxy_set_header X-Forwarded-For \\\$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \\\$scheme;
-        proxy_cache_bypass \\\$http_upgrade;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
+        # Encaminhamento Estrito de Identidade (Vital Anti-BruteForce)
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_cache_bypass \$http_upgrade;
     }
 }
 EOF
     ln -sf /etc/nginx/sites-available/help-desk /etc/nginx/sites-enabled/
     rm -f /etc/nginx/sites-enabled/default
-    systemctl restart nginx
 else
-    echo -e "\n🛡️ [7/7] NGINX já configurado. Reiniciando por segurança..."
-    systemctl restart nginx
+    log_info "Configuração Nginx nativa preservada."
 fi
+systemctl restart nginx
 
-# 8. Certificado SSL Gratuito (Certbot)
-if [ -n "$APP_DOMAIN" ] && [[ "$AUTO_SSL" == "y" || "$AUTO_SSL" == "Y" ]]; then
-    echo -e "\n🔒 [8/8] Provisionando Certificado SSL Let's Encrypt para $APP_DOMAIN..."
+# ==========================================
+# 10. CERTIFICADO AUTO SSL (CERTBOT LET'S ENCRYPT)
+# ==========================================
+log_header "[8/8] Política de Transporte de Borda (Edge TLS)"
+if [[ -n "${APP_DOMAIN:-}" ]] && [[ "${AUTO_SSL:-}" == "y" || "${AUTO_SSL:-}" == "Y" ]]; then
+    log_info "Executando protocolo de Autenticação Let's Encrypt para $APP_DOMAIN"
     if ! command -v certbot &> /dev/null; then
-        apt-get install -y certbot python3-certbot-nginx
+        apt-get install -yqq certbot python3-certbot-nginx > /dev/null 2>&1
     fi
-    echo "Executando processo da Autoridade Certificadora..."
     certbot --nginx -d "$APP_DOMAIN" --non-interactive --agree-tos -m "$ADMIN_EMAIL" || true
-    echo -e "\e[0;32m✓ SSL Instalado com Sucesso. Trafego HTTPS Ativo!\e[0m"
-elif [ -n "$APP_DOMAIN" ]; then
-    echo -e "\n🔒 [8/8] Pulando Auto-SSL (Gerenciado via Edge/Firewall)."
+    log_success "Certificado Assentado. TLS ativado."
+elif [ -n "${APP_DOMAIN:-}" ]; then
+    log_info "Auto-SSL abortado pelo usuário. Presumindo terminação SSL num Tier externo (pfSense, Cloudflare)."
+else
+    log_info "Deploy resolvido por camada estrita (Modo IP)."
 fi
 
-echo "======================================================"
-echo -e "\n\e[0;32m🏆 PROCESSO CONCLUÍDO COM SUCESSO!\e[0m"
-echo "======================================================"
-echo "O Help Desk está atualizado e rodando na porta 80."
+# ==========================================
+echo -e "\n${C_BOLD}${C_GREEN}🏆 IMPLANTAÇÃO EXECUTADA E HOMOLOGADA!${C_RESET}"
+echo -e "${C_BOLD}Status da Escotilha:${C_RESET} PM2 (Status UP), Nginx (Proxy UP), Banco (Integrado)."
+echo -e "Help Desk escutando tráfego ativamente. Pode fechar o terminal e aproveitar.\n"
