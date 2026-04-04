@@ -45,8 +45,14 @@ else
     echo ""
     echo "==== CONFIGURAÇÃO DE DOMÍNIO E SSL ===="
     echo "Qual é o seu Domínio/DNS em produção? (Ex: suporte.empresa.com.br)"
-    echo -e "Se você fornecer um domínio, o instalador tentará gerar um \e[1mCertificado SSL Gratuito (HTTPS)\e[0m via Certbot automaticamente."
     read -p "Domínio (Deixe em branco se for acessar puro pelo IP): " APP_DOMAIN
+
+    if [ -n "$APP_DOMAIN" ]; then
+        echo -e "\nVocê informou um domínio."
+        echo "Deseja que os certificados SSL sejam gerados automaticamente via Certbot nesta máquina?"
+        echo -e "Atenção: Se outra máquina/firewall (\e[1mpfSense, Cloudflare, etc\e[0m) cuida do HTTPS na frente deste servidor, digite 'n'."
+        read -p "Gerar SSL Automaticamente agora? (y/n): " AUTO_SSL
+    fi
 
     echo ""
     echo "==== CREDENCIAIS DO PRIMEIRO ACESSO ===="
@@ -251,7 +257,7 @@ else
 fi
 
 # 8. Certificado SSL Gratuito (Certbot)
-if [ -n "$APP_DOMAIN" ]; then
+if [ -n "$APP_DOMAIN" ] && [[ "$AUTO_SSL" == "y" || "$AUTO_SSL" == "Y" ]]; then
     echo -e "\n🔒 [8/8] Provisionando Certificado SSL Let's Encrypt para $APP_DOMAIN..."
     if ! command -v certbot &> /dev/null; then
         apt-get install -y certbot python3-certbot-nginx
@@ -259,6 +265,8 @@ if [ -n "$APP_DOMAIN" ]; then
     echo "Executando processo da Autoridade Certificadora..."
     certbot --nginx -d "$APP_DOMAIN" --non-interactive --agree-tos -m "$ADMIN_EMAIL" || true
     echo -e "\e[0;32m✓ SSL Instalado com Sucesso. Trafego HTTPS Ativo!\e[0m"
+elif [ -n "$APP_DOMAIN" ]; then
+    echo -e "\n🔒 [8/8] Pulando Auto-SSL (Gerenciado via Edge/Firewall pfSense)."
 fi
 
 echo "======================================================"
