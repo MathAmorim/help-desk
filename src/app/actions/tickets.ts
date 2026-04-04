@@ -206,10 +206,16 @@ export async function addComment(ticketId: string, texto: string, isInterno: boo
     const cleanTexto = texto.replace(/\0/g, "");
 
     const resultComment = await prisma.$transaction(async (tx) => {
+        const ticketState = await tx.ticket.findUnique({ where: { id: ticketId }, select: { status: true, responsavelId: true } });
+
+        // Guard: Ticket Morto. Ninguém pode comentar se estiver "FECHADO" (Terminado Permanente)
+        if (ticketState?.status === "FECHADO") {
+            throw new Error("Ação Inválida: O ticket está FECHADO e arquivado definitivamente.");
+        }
+
         // Se for marcado como solução, temos que garantir que o ticket não foi fechado correntemente por outra thread
         if (isSolucao && session.user.role !== "USUARIO") {
-            const check = await tx.ticket.findUnique({ where: { id: ticketId }, select: { status: true, responsavelId: true } });
-            if (check?.status === "RESOLVIDO" || check?.status === "FECHADO") {
+            if (ticketState?.status === "RESOLVIDO") {
                 throw new Error("Concorrência: Chamado já foi marcado como resolvido.");
             }
         }
@@ -283,6 +289,11 @@ export async function updateTicketStatus(ticketId: string, status: string, respo
         const check = await tx.ticket.findUnique({ where: { id: ticketId } });
         if (!check) throw new Error("Chamado não encontrado");
 
+        // Guard: Ticket Fechado (Morto). Se está fechado, não pode mudar de status. Só pode criar chamados vinculados novos.
+        if (check.status === "FECHADO") {
+            throw new Error("Transição Lógica Inválida: O ticket está arquivado e não pode sofrer mais alterações de estado.");
+        }
+
         if (status === "RESOLVIDO" && check.status === "RESOLVIDO") {
             throw new Error("Concorrência: Chamado já foi resolvido/fechado");
         }
@@ -341,6 +352,12 @@ export async function updateTicketPriority(ticketId: string, prioridade: string)
     const session = await getServerSession(authOptions);
     if (!session || !session.user || session.user.role === "USUARIO") throw new Error("Não autorizado");
 
+    const check = await prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!check) throw new Error("Chamado não encontrado");
+    if (check.status === "RESOLVIDO" || check.status === "FECHADO") {
+        throw new Error("Transição Lógica Inválida: Não é possível modificar a prioridade de um ticket concluído.");
+    }
+
     const ticket = await prisma.ticket.update({
         where: { id: ticketId },
         data: { prioridade }
@@ -374,6 +391,12 @@ export async function updateTicketPriority(ticketId: string, prioridade: string)
 export async function updateTicketCategory(ticketId: string, categoria: string) {
     const session = await getServerSession(authOptions);
     if (!session || !session.user || session.user.role === "USUARIO") throw new Error("Não autorizado");
+
+    const check = await prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!check) throw new Error("Chamado não encontrado");
+    if (check.status === "RESOLVIDO" || check.status === "FECHADO") {
+        throw new Error("Transição Lógica Inválida: Não é possível modificar a categoria de um ticket concluído.");
+    }
 
     const ticket = await prisma.ticket.update({
         where: { id: ticketId },
@@ -445,6 +468,14 @@ export async function solicitarReabertura(ticketId: string) {
 export async function avaliarReabertura(ticketId: string, aceitar: boolean) {
     const session = await getServerSession(authOptions);
     if (!session || !session.user || session.user.role === "USUARIO") throw new Error("Não autorizado");
+
+    const check = await prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!check) throw new Error("Chamado não encontrado");
+
+    // Guard: Um chamado que evoluiu de RESOLVIDO para FECHADO é inalterável, não pode ser re-aberto nem pela moderação.
+    if (check.status === "FECHADO") {
+        throw new Error("Transição Lógica Inválida: Não é possível reabrir um ticket que já foi fechado permanentemente e arquivado.");
+    }
 
     if (aceitar) {
         await prisma.ticket.update({
