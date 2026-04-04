@@ -50,7 +50,7 @@ else
     if [ -n "$APP_DOMAIN" ]; then
         echo -e "\nVocê informou um domínio."
         echo "Deseja que os certificados SSL sejam gerados automaticamente via Certbot nesta máquina?"
-        echo -e "Atenção: Se outra máquina/firewall (\e[1mpfSense, Cloudflare, etc\e[0m) cuida do HTTPS na frente deste servidor, digite 'n'."
+        echo -e "Atenção: Se outra máquina/firewall cuida do HTTPS na frente deste servidor, digite 'n'."
         read -p "Gerar SSL Automaticamente agora? (y/n): " AUTO_SSL
     fi
 
@@ -266,7 +266,7 @@ if [ -n "$APP_DOMAIN" ] && [[ "$AUTO_SSL" == "y" || "$AUTO_SSL" == "Y" ]]; then
     certbot --nginx -d "$APP_DOMAIN" --non-interactive --agree-tos -m "$ADMIN_EMAIL" || true
     echo -e "\e[0;32m✓ SSL Instalado com Sucesso. Trafego HTTPS Ativo!\e[0m"
 elif [ -n "$APP_DOMAIN" ]; then
-    echo -e "\n🔒 [8/8] Pulando Auto-SSL (Gerenciado via Edge/Firewall pfSense)."
+    echo -e "\n🔒 [8/8] Pulando Auto-SSL (Gerenciado via Edge/Firewall)."
 fi
 
 echo "======================================================"
