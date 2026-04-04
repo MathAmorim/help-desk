@@ -22,7 +22,6 @@ export default function SnakeGame() {
     const [gameOver, setGameOver] = useState(false);
     const [leaderboard, setLeaderboard] = useState<any[]>([]);
     const [isSaving, setIsSaving] = useState(false);
-    const [guestName, setGuestName] = useState("");
     const gameLoopRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
     const generateFood = useCallback(() => {
@@ -109,21 +108,20 @@ export default function SnakeGame() {
     };
 
     const handleSaveScore = async () => {
-        if (!session && !guestName.trim()) {
-            toast.error("Identificação Necessária", {
-                description: "Por favor, digite seu nome de intruso antes de salvar."
+        if (!session) {
+            toast.error("Acesso Negado", {
+                description: "Apenas usuários logados podem salvar o score."
             });
             return;
         }
 
         setIsSaving(true);
-        const result = await saveSnakeScore(score, guestName);
+        const result = await saveSnakeScore(score);
 
         if (result.success) {
             toast.success("Score Registrado!", {
                 description: "Sua pontuação foi guardada nos arquivos secretos."
             });
-            setGuestName("");
             await fetchLeaderboard();
         } else {
             toast.error("Falha na Sincronização", {
@@ -180,29 +178,18 @@ export default function SnakeGame() {
                                         <RefreshCcw className="h-5 w-5" /> Tentar Novamente
                                     </Button>
 
-                                    {!session && (
-                                        <div className="space-y-2 w-full">
-                                            <input
-                                                type="text"
-                                                placeholder="DIGITE SEU NOME"
-                                                value={guestName}
-                                                onChange={(e) => setGuestName(e.target.value.toUpperCase())}
-                                                maxLength={15}
-                                                className="w-full bg-black border-2 border-emerald-900 text-emerald-400 p-2 text-center font-black focus:border-emerald-500 outline-none uppercase placeholder:opacity-30"
-                                            />
-                                        </div>
+                                    {session && (
+                                        <Button
+                                            onClick={handleSaveScore}
+                                            disabled={isSaving || score === 0}
+                                            size="lg"
+                                            className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 font-bold uppercase tracking-tighter"
+                                        >
+                                            {isSaving ? "Salvando..." : "Salvar no Ranking"}
+                                        </Button>
                                     )}
 
-                                    <Button
-                                        onClick={handleSaveScore}
-                                        disabled={isSaving || score === 0 || (!session && !guestName.trim())}
-                                        size="lg"
-                                        className={`${session ? "bg-emerald-600 hover:bg-emerald-500" : "bg-neutral-800 hover:bg-neutral-700"} text-white gap-2 font-bold uppercase tracking-tighter`}
-                                    >
-                                        {isSaving ? "Salvando..." : "Salvar no Ranking"}
-                                    </Button>
-
-                                    {session ? null : (
+                                    {!session && (
                                         <div className="space-y-2">
                                             <p className="text-xs text-red-400 animate-pulse uppercase font-black">Identificação necessária para rankeamento</p>
                                             <Link href="/login" className="w-full block">

@@ -124,12 +124,20 @@ else
         PROVIDER="mysql"
     else
         PROVIDER="sqlite"
+        echo -e "\n\e[1;33m⚠️ AVISO DE SEGURANÇA E DESEMPENHO ⚠️\e[0m"
+        echo -e "Foi detectado o uso do banco \e[1mSQLite\e[0m para este ambiente!"
+        echo -e "O SQLite NÃO é recomendado para produção real. Ele não suporta múltiplas gravações simultâneas em alta demanda e não é a escolha primária para este projeto de Help Desk (PostgreSQL ou MySQL são os indicados)."
+        read -p "Você tem certeza que deseja continuar a instalação/atualização operando com SQLite? (y/n): " PROCEED_SQLITE
+        if [[ "$PROCEED_SQLITE" != "y" && "$PROCEED_SQLITE" != "Y" ]]; then
+            echo -e "\e[31mProcesso cancelado pelo usuário.\e[0m"
+            exit 1
+        fi
     fi
     echo -e "⚙️ Provedor detectado via .env: \e[1m$PROVIDER\e[0m"
     sed -i '/generator client {/,/}/ s/provider = ".*"/provider = "prisma-client-js"/' prisma/schema.prisma
     sed -i '/datasource db {/,/}/ s/provider = ".*"/provider = "'$PROVIDER'"/' prisma/schema.prisma
     
-    mkdir -p public/uploads
+    mkdir -p public/uploads private_uploads
 fi
 
 # 4. Build & Segurança

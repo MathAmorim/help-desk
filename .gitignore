@@ -66,3 +66,5 @@ Thumbs.db
 
 # Security
 /src/app/api/seed/
+/private_uploads/*
+!/private_uploads/.gitkeep

@@ -26,7 +26,7 @@ export async function uploadFile(formData: FormData) {
     const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
     const filename = `${uniqueSuffix}-${safeName}`;
 
-    const uploadsDir = path.join(process.cwd(), "public", "uploads");
+    const uploadsDir = path.join(process.cwd(), "private_uploads");
     if (!fs.existsSync(uploadsDir)) {
         fs.mkdirSync(uploadsDir, { recursive: true });
     }
@@ -34,15 +34,16 @@ export async function uploadFile(formData: FormData) {
     const filepath = path.join(uploadsDir, filename);
     fs.writeFileSync(filepath, buffer);
 
-    const fileUrl = `/uploads/${filename}`;
+    const fileUrl = `/api/files/${filename}`;
 
     // Deixa salvo órfão por enquanto; a Action de Criação do Chamado/Comment fará a amarração.
-    const attachment = await prisma.attachment.create({
+    const attachment = await (prisma as any).attachment.create({
         data: {
             fileName: file.name,
             fileUrl,
             fileSize: file.size,
             mimeType: file.type,
+            userId: session.user.id,
         }
     });
 

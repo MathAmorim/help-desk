@@ -8,16 +8,19 @@ import { revalidatePath } from "next/cache";
 /**
  * Salva a pontuação do jogo da cobrinha
  */
-export async function saveSnakeScore(score: number, guestName?: string) {
+export async function saveSnakeScore(score: number) {
     const session = await getServerSession(authOptions);
+
+    if (!session || !session.user) {
+        return { error: "Acesso Negado: Apenas usuários logados podem salvar." };
+    }
 
     try {
         // Usamos as any para evitar erro de tipo caso o prisma generate não tenha rodado
         await (prisma as any).snakeScore.create({
             data: {
                 score,
-                userId: session?.user?.id || null,
-                guestName: session ? null : (guestName || "Anônimo")
+                userId: session.user.id
             }
         });
 

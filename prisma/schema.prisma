@@ -31,6 +31,7 @@ model User {
   auditLogs          AuditLog[]
   notifications      Notification[]
   snakeScores        SnakeScore[]
+  attachments        Attachment[]
 }
 
 model Ticket {
@@ -90,6 +91,9 @@ model Attachment {
   fileUrl     String
   fileSize    Int
   mimeType    String
+  
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
   
   ticketId    String?
   ticket      Ticket?  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
