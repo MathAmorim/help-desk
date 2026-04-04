@@ -179,113 +179,132 @@ export async function addComment(ticketId: string, texto: string, isInterno: boo
         throw new Error("Usuários não podem criar notas internas");
     }
 
-    const comment = await prisma.comment.create({
-        data: {
-            texto,
-            isInterno,
-            isSolucao: isSolucao || false,
-            ticketId,
-            autorId: session.user.id,
-            attachments: attachmentIds && attachmentIds.length > 0 ? {
-                connect: attachmentIds.map(id => ({ id }))
-            } : undefined
-        } as any
-    });
-
-    let detalhesLog = isInterno ? "Nota interna adicionada." : "Comentário público adicionado.";
-
-    if (isSolucao && session.user.role !== "USUARIO") {
-        const check = await prisma.ticket.findUnique({ where: { id: ticketId } });
-        const updateData: any = { status: "RESOLVIDO" };
-        if (!check?.responsavelId) {
-            updateData.responsavelId = session.user.id;
+    const resultComment = await prisma.$transaction(async (tx) => {
+        // Se for marcado como solução, temos que garantir que o ticket não foi fechado correntemente por outra thread
+        if (isSolucao && session.user.role !== "USUARIO") {
+            const check = await tx.ticket.findUnique({ where: { id: ticketId }, select: { status: true, responsavelId: true } });
+            if (check?.status === "RESOLVIDO" || check?.status === "FECHADO") {
+                throw new Error("Concorrência: Chamado já foi marcado como resolvido.");
+            }
         }
 
-        await prisma.ticket.update({
-            where: { id: ticketId },
-            data: updateData
+        const comment = await tx.comment.create({
+            data: {
+                texto,
+                isInterno,
+                isSolucao: isSolucao || false,
+                ticketId,
+                autorId: session.user.id,
+                attachments: attachmentIds && attachmentIds.length > 0 ? {
+                    connect: attachmentIds.map(id => ({ id }))
+                } : undefined
+            } as any
         });
-        detalhesLog = updateData.responsavelId
-            ? "Chamado auto-atribuído e marcado como resolvido através de solução."
-            : "Chamado marcado como resolvido através de solução.";
-    }
 
-    await prisma.auditLog.create({
-        data: {
-            acao: isSolucao ? "FECHAMENTO" : "COMENTARIO",
-            detalhes: detalhesLog,
-            ticketId,
-            userId: session.user.id
-        }
-    });
+        let detalhesLog = isInterno ? "Nota interna adicionada." : "Comentário público adicionado.";
 
-    if (!isInterno && session.user.role !== "USUARIO") {
-        const t = await prisma.ticket.findUnique({ where: { id: ticketId }, select: { solicitanteId: true } });
-        if (t && t.solicitanteId !== session.user.id) {
-            await prisma.notification.create({
-                data: {
-                    mensagem: isSolucao ? `Seu chamado foi concluído! Por favor, avalie a qualidade do nosso suporte.` : `Novo comentário da equipe técnica no seu chamado...`,
-                    link: `/dashboard/ticket/${ticketId}`,
-                    userId: t.solicitanteId,
-                    ticketId: ticketId
-                }
+        if (isSolucao && session.user.role !== "USUARIO") {
+            const check = await tx.ticket.findUnique({ where: { id: ticketId } });
+            const updateData: any = { status: "RESOLVIDO" };
+            if (!check?.responsavelId) {
+                updateData.responsavelId = session.user.id;
+            }
+
+            await tx.ticket.update({
+                where: { id: ticketId },
+                data: updateData
             });
+            detalhesLog = updateData.responsavelId
+                ? "Chamado auto-atribuído e marcado como resolvido através de solução."
+                : "Chamado marcado como resolvido através de solução.";
         }
-    }
+
+        await tx.auditLog.create({
+            data: {
+                acao: isSolucao ? "FECHAMENTO" : "COMENTARIO",
+                detalhes: detalhesLog,
+                ticketId,
+                userId: session.user.id
+            }
+        });
+
+        if (!isInterno && session.user.role !== "USUARIO") {
+            const t = await tx.ticket.findUnique({ where: { id: ticketId }, select: { solicitanteId: true } });
+            if (t && t.solicitanteId !== session.user.id) {
+                await tx.notification.create({
+                    data: {
+                        mensagem: isSolucao ? `Seu chamado foi concluído! Por favor, avalie a qualidade do nosso suporte.` : `Novo comentário da equipe técnica no seu chamado...`,
+                        link: `/dashboard/ticket/${ticketId}`,
+                        userId: t.solicitanteId,
+                        ticketId: ticketId
+                    }
+                });
+            }
+        }
+
+        return comment;
+    });
 
     revalidatePath(`/dashboard/ticket/${ticketId}`);
-    return comment;
+    return resultComment;
 }
 
 export async function updateTicketStatus(ticketId: string, status: string, responsavelId?: string) {
     const session = await getServerSession(authOptions);
     if (!session || !session.user || session.user.role === "USUARIO") throw new Error("Não autorizado");
 
-    let finalResponsavelId = responsavelId;
+    const ticket = await prisma.$transaction(async (tx) => {
+        const check = await tx.ticket.findUnique({ where: { id: ticketId } });
+        if (!check) throw new Error("Chamado não encontrado");
 
-    if (status === "RESOLVIDO") {
-        const check = await prisma.ticket.findUnique({ where: { id: ticketId } });
-        if (!check?.responsavelId && !responsavelId) {
+        if (status === "RESOLVIDO" && check.status === "RESOLVIDO") {
+            throw new Error("Concorrência: Chamado já foi resolvido/fechado");
+        }
+
+        let finalResponsavelId = responsavelId;
+        if (status === "RESOLVIDO" && !check.responsavelId && !responsavelId) {
             finalResponsavelId = session.user.id;
         }
-    }
 
-    const updateData: any = { status };
-    let detalhes = `Status alterado para ${status}.`;
+        const updateData: any = { status };
+        let detalhes = `Status alterado para ${status}.`;
 
-    if (finalResponsavelId) {
-        updateData.responsavelId = finalResponsavelId;
-        detalhes = `Chamado assumido e status alterado para ${status}.`;
-    }
-
-    const ticket = await prisma.ticket.update({
-        where: { id: ticketId },
-        data: updateData
-    });
-
-    await prisma.auditLog.create({
-        data: {
-            acao: finalResponsavelId ? "ATRIBUICAO" : "MUDANCA_STATUS",
-            detalhes,
-            ticketId,
-            userId: session.user.id
+        if (finalResponsavelId) {
+            updateData.responsavelId = finalResponsavelId;
+            detalhes = `Chamado assumido e status alterado para ${status}.`;
         }
-    });
 
-    if (ticket.solicitanteId !== session.user.id) {
-        await prisma.notification.create({
+        const updatedTicket = await tx.ticket.update({
+            where: { id: ticketId },
+            data: updateData
+        });
+
+        await tx.auditLog.create({
             data: {
-                mensagem: responsavelId
-                    ? `Seu chamado foi assumido por um técnico e o status é ${status}.`
-                    : status === "RESOLVIDO"
-                        ? `Seu chamado foi concluído! Por favor, avalie a qualidade do nosso suporte.`
-                        : `O status do seu chamado mudou para ${status}.`,
-                link: `/dashboard/ticket/${ticketId}`,
-                userId: ticket.solicitanteId,
-                ticketId: ticketId
+                acao: finalResponsavelId ? "ATRIBUICAO" : "MUDANCA_STATUS",
+                detalhes,
+                ticketId,
+                userId: session.user.id
             }
         });
-    }
+
+        if (updatedTicket.solicitanteId !== session.user.id) {
+            await tx.notification.create({
+                data: {
+                    mensagem: responsavelId
+                        ? `Seu chamado foi assumido por um técnico e o status é ${status}.`
+                        : status === "RESOLVIDO"
+                            ? `Seu chamado foi concluído! Por favor, avalie a qualidade do nosso suporte.`
+                            : `O status do seu chamado mudou para ${status}.`,
+                    link: `/dashboard/ticket/${ticketId}`,
+                    userId: updatedTicket.solicitanteId,
+                    ticketId: ticketId
+                }
+            });
+        }
+
+        return updatedTicket;
+    });
 
     revalidatePath(`/dashboard/ticket/${ticketId}`);
     revalidatePath("/dashboard");
@@ -536,42 +555,56 @@ export async function encerrarChamadoUsuario(ticketId: string, motivo?: string) 
     if (!ticket) throw new Error("Chamado não encontrado");
     if (ticket.solicitanteId !== session.user.id) throw new Error("Acesso negado");
 
-    const t = await prisma.ticket.update({
-        where: { id: ticketId },
-        data: { status: "RESOLVIDO", encerradoPeloAutor: true } as any
-    });
+    if (ticket.status === "RESOLVIDO" || ticket.status === "FECHADO") {
+        throw new Error("Chamado já está encerrado");
+    }
 
-    await prisma.auditLog.create({
-        data: {
-            acao: "FECHAMENTO",
-            detalhes: "O próprio usuário solucionou/cancelou o chamado antecipadamente.",
-            ticketId,
-            userId: session.user.id
+    const t = await prisma.$transaction(async (tx) => {
+        // Double check atomicamente
+        const currentOp = await tx.ticket.findUnique({ where: { id: ticketId }, select: { status: true } });
+        if (currentOp?.status === "RESOLVIDO" || currentOp?.status === "FECHADO") {
+            throw new Error("Concorrência: Chamado já foi encerrado nesta fração de segundo");
         }
-    });
 
-    await prisma.comment.create({
-        data: {
-            texto: motivo && motivo.trim().length > 0
-                ? `🛑 O autor encerrou o chamado via autoatendimento com a seguinte tratativa:\n\n${motivo}`
-                : "🛑 O autor do chamado encerrou ou cancelou este ticket via autoatendimento.",
-            isInterno: false,
-            isSolucao: true,
-            ticketId,
-            autorId: session.user.id
-        } as any
-    });
+        const updatedTicket = await tx.ticket.update({
+            where: { id: ticketId },
+            data: { status: "RESOLVIDO", encerradoPeloAutor: true } as any
+        });
 
-    if (ticket.responsavelId) {
-        await prisma.notification.create({
+        await tx.auditLog.create({
             data: {
-                mensagem: `O usuário encerrou/cancelou o chamado atuado por você.`,
-                link: `/dashboard/ticket/${ticketId}`,
-                userId: ticket.responsavelId,
-                ticketId: ticketId
+                acao: "FECHAMENTO",
+                detalhes: "O próprio usuário solucionou/cancelou o chamado antecipadamente.",
+                ticketId,
+                userId: session.user.id
             }
         });
-    }
+
+        await tx.comment.create({
+            data: {
+                texto: motivo && motivo.trim().length > 0
+                    ? `🛑 O autor encerrou o chamado via autoatendimento com a seguinte tratativa:\n\n${motivo}`
+                    : "🛑 O autor do chamado encerrou ou cancelou este ticket via autoatendimento.",
+                isInterno: false,
+                isSolucao: true,
+                ticketId,
+                autorId: session.user.id
+            } as any
+        });
+
+        if (ticket.responsavelId) {
+            await tx.notification.create({
+                data: {
+                    mensagem: `O usuário encerrou/cancelou o chamado atuado por você.`,
+                    link: `/dashboard/ticket/${ticketId}`,
+                    userId: ticket.responsavelId,
+                    ticketId: ticketId
+                }
+            });
+        }
+
+        return updatedTicket;
+    });
 
     revalidatePath(`/dashboard/ticket/${ticketId}`);
     revalidatePath("/dashboard");
