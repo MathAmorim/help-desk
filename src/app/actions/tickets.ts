@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { checkRateLimitUser } from "@/lib/rate-limit";
 
 export async function createTicket(data: {
     titulo: string;
@@ -18,6 +19,12 @@ export async function createTicket(data: {
 
     if (!session || !session.user) {
         throw new Error("Não autorizado");
+    }
+
+    // Rate Limit: Bloqueia IPs/Usuários que abrirem mais de 3 tickets em menos de 1 minuto (Spam flood).
+    const isAllowed = checkRateLimitUser(session.user.id, "createTicket", 3, 60 * 1000);
+    if (!isAllowed) {
+        throw new Error("Você atingiu o limite de criação de chamados. Por favor, aguarde alguns instantes.");
     }
 
     const categoryRecord = await prisma.category.findUnique({
@@ -185,6 +192,12 @@ export async function addComment(ticketId: string, texto: string, isInterno: boo
 
     if (session.user.role === "USUARIO" && isInterno) {
         throw new Error("Usuários não podem criar notas internas");
+    }
+
+    // Rate Limit: Restringe 10 comentários por minuto por usuário (Time-flooding protection)
+    const isAllowed = checkRateLimitUser(session.user.id, "addComment", 10, 60 * 1000);
+    if (!isAllowed) {
+        throw new Error("Muitos comentários em um curto período. Aguarde um instante.");
     }
 
     if (texto?.length > 10000) {

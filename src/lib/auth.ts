@@ -2,6 +2,7 @@ import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { checkRateLimitIp } from "./rate-limit"; // In-memory rate limiting defense
 
 export const authOptions: NextAuthOptions = {
     providers: [
@@ -11,7 +12,17 @@ export const authOptions: NextAuthOptions = {
                 identifier: { label: "CPF ou E-mail (Apenas Admin)", type: "text", placeholder: "123.456.789-00 ou admin@email.com" },
                 password: { label: "Senha", type: "password" }
             },
-            async authorize(credentials) {
+            async authorize(credentials, req) {
+                // Captura o mock do IP da request via req.headers do cabeçalho Proxy/NextAuth
+                const ip = req?.headers?.["x-forwarded-for"] || req?.headers?.["x-real-ip"] || "unknown_ip";
+
+                // Limite de 5 tentativas a cada 3 minutos (180.000 ms)
+                const isAllowed = checkRateLimitIp(ip as string, 5, 3 * 60 * 1000);
+
+                if (!isAllowed) {
+                    throw new Error("Muitas tentativas de login. Por segurança, tente novamente em alguns minutos.");
+                }
+
                 if (!credentials?.identifier || !credentials?.password) {
                     throw new Error("Identificação e senha são obrigatórios.");
                 }
