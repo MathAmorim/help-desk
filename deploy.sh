@@ -44,19 +44,69 @@ if [ -f "$ENV_PATH" ]; then
     echo -e "Escolha o modo de operação:"
     echo -e "  1) ${C_BOLD}Update Seguro${C_RESET} (Mantém dados, recompila código e patches de segurança)"
     echo -e "  2) ${C_BOLD}Reinstalação Forçada${C_RESET} (Atenção: Sobrescreve env/credentials)"
-    read -p "Sua Opção (1 ou 2): " DEPLOY_MODE
+    echo -e "  3) ${C_BOLD}Disaster Recovery${C_RESET} (Restaurar Backup sobre instalação atual)"
+    read -p "Sua Opção (1, 2 ou 3): " DEPLOY_MODE
     
     if [[ "$DEPLOY_MODE" == "1" ]]; then
         IS_UPDATE=true
         log_info "Modo de Atualização Ativado. Configurações de BD e admin serão retidas."
+    elif [[ "$DEPLOY_MODE" == "3" ]]; then
+        IS_DR=true
+        log_warn "Modo Disaster Recovery Ativado."
+    fi
+else
+    log_warn "Nenhuma instalação prévia detectada (Máquina Virgem)."
+    echo -e "Escolha como deseja iniciar o sistema:"
+    echo -e "  1) ${C_BOLD}Nova Instalação Limpa${C_RESET}"
+    echo -e "  2) ${C_BOLD}Instalação via Restauração de Backup${C_RESET} (Importar dados legados)"
+    read -p "Sua Opção (1 ou 2): " NEW_MACHINE_MODE
+
+    if [[ "$NEW_MACHINE_MODE" == "2" ]]; then
+        IS_DR=true
+        log_info "Preparando servidor para receber restauração de backup."
     fi
 fi
 
 # ==========================================
 # 2. COLETA DE PARÂMETROS
 # ==========================================
+# Variável global para controle de DR
+IS_DR=${IS_DR:-false}
+
 if [ "$IS_UPDATE" = false ]; then
     GIT_URL="https://github.com/MathAmorim/help-desk.git"
+
+    # Se for DR, o usuário precisa apontar o arquivo ZIP
+    if [ "$IS_DR" = true ]; then
+        log_header "Seleção de Arquivo de Backup"
+        if [ -d "backups" ]; then
+            # Usa arrays para listar backups encontrados
+            BACKUPS=($(ls backups/*.zip 2>/dev/null))
+            if [ ${#BACKUPS[@]} -gt 0 ]; then
+                echo "Backups localizados na pasta /backups:"
+                for i in "${!BACKUPS[@]}"; do
+                    echo "  $((i+1))) $(basename ${BACKUPS[$i]})"
+                done
+                read -p "Escolha o número do backup (ou digite o caminho completo): " BACK_CHOICE
+                # Verifica se é um número dentro do range
+                if [[ "$BACK_CHOICE" =~ ^[0-9]+$ ]] && [ "$BACK_CHOICE" -le "${#BACKUPS[@]}" ]; then
+                    SELECTED_BACKUP="${BACKUPS[$((BACK_CHOICE-1))]}"
+                else
+                    SELECTED_BACKUP="$BACK_CHOICE"
+                fi
+            else
+                read -p "Nenhum backup encontrado em /backups. Digite o caminho completo do .zip: " SELECTED_BACKUP
+            fi
+        else
+            read -p "Digite o caminho completo do arquivo de backup (.zip): " SELECTED_BACKUP
+        fi
+        
+        if [ ! -f "$SELECTED_BACKUP" ]; then
+            log_error "Arquivo de backup não encontrado: $SELECTED_BACKUP"
+            exit 1
+        fi
+        log_success "Alvo de Restauração: $SELECTED_BACKUP"
+    fi
 
     log_header "Topologia Base de Dados"
     echo "1) PostgreSQL (Recomendado Padrão Ouro)"
@@ -83,10 +133,13 @@ if [ "$IS_UPDATE" = false ]; then
         read -p "Gerar Cadeado SSL Automaticamente? (y/n): " AUTO_SSL
     fi
 
-    log_header "Credenciais Administrativas (Raiz)"
-    read -p "Email do Administrador Inicial: " ADMIN_EMAIL
-    read -s -p "Senha Segura do Administrador: " ADMIN_PASS
-    echo ""
+    # APENAS solicita credenciais se NÃO for um Restore
+    if [ "$IS_DR" = false ]; then
+        log_header "Credenciais Administrativas (Raiz)"
+        read -p "Email do Administrador Inicial: " ADMIN_EMAIL
+        read -s -p "Senha Segura do Administrador: " ADMIN_PASS
+        echo ""
+    fi
 
     if [ -n "$APP_DOMAIN" ]; then
         BASE_URL="https://$APP_DOMAIN"
@@ -218,7 +271,7 @@ npx prisma db push --accept-data-loss # Mantendo como fallback caso migrações 
 # ==========================================
 # 7. SEEDING DE BASE DE DADOS
 # ==========================================
-if [ "$IS_UPDATE" = false ]; then
+if [ "$IS_UPDATE" = false ] && [ "$IS_DR" = false ]; then
     log_header "[5/8] Operação de Base Seed inicial"
     cat <<EOF > script-seed-initial.js
 const { PrismaClient } = require('@prisma/client');
@@ -253,7 +306,17 @@ EOF
     node script-seed-initial.js && rm -f script-seed-initial.js
     log_success "Base Populada."
 else
-    log_info "[5/8] Pulando Seeding (Atualização Incremental)"
+    log_info "[5/8] Pulando Seeding (Atualização ou Restauração de Backup)"
+fi
+
+# ==========================================
+# 7.5 RESTAURAÇÃO DE DADOS (APENAS MODO DR)
+# ==========================================
+if [ "$IS_DR" = true ]; then
+    log_header "Injetando Matriz de Dados (Restauração)"
+    # Como o script restore.ts pede confirmação manual, o deploy.sh pausará aqui
+    # Isso garante a segurança do Disaster Recovery
+    npm run restore "$SELECTED_BACKUP"
 fi
 
 log_info "Iniciando processo de Hard Build (Next.js 14)... Isso demanda Memória."

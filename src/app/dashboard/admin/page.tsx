@@ -79,7 +79,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
                 <div className="flex flex-wrap items-center gap-2">
                     <Link href="/dashboard/admin/sla">
                         <Button variant="outline" className="h-10 text-amber-600 dark:text-amber-500 border-amber-200 dark:border-amber-900 bg-amber-50/50 dark:bg-amber-950/20 hover:bg-amber-100 dark:hover:bg-amber-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm">
-                             SLA & Automação
+                            SLA
                         </Button>
                     </Link>
                     <Link href="/dashboard/admin/setores">
