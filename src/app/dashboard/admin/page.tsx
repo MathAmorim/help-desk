@@ -7,10 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import NewUserButton from "./NewUserButton";
 import ResetUserButton from "./ResetUserButton";
 import EditUserButton from "./EditUserButton";
+import DeactivateUserButton from "./DeactivateUserButton";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-export default async function AdminUsersPage() {
+import { Users, UserMinus } from "lucide-react";
+
+export default async function AdminUsersPage({ searchParams }: { searchParams: Promise<{ showInactive?: string }> }) {
     const session = await getServerSession(authOptions);
+    const resolvedParams = await searchParams;
+    const showInactive = resolvedParams.showInactive === "true";
 
     if (!session || session.user.role !== "ADMIN") {
         return (
@@ -21,7 +26,6 @@ export default async function AdminUsersPage() {
     }
 
     // Puxa todos os setores já cadastrados no banco (distintos)
-    // Cast para any para ignorar erro de tipo enquanto o prisma generate não conclui
     const usersWithSectors = await (prisma.user as any).findMany({
         where: { setor: { not: null } },
         select: { setor: true },
@@ -33,7 +37,13 @@ export default async function AdminUsersPage() {
         .filter((s: any) => s && s.trim().length > 0)
         .sort() as string[];
 
+    const where: any = {};
+    if (!showInactive) {
+        where.ativo = true;
+    }
+
     const users = await prisma.user.findMany({
+        where,
         orderBy: { name: "asc" }
     });
 
@@ -43,7 +53,7 @@ export default async function AdminUsersPage() {
                 <div>
                     <h2 className="text-3xl font-bold tracking-tight">Painel Administrativo</h2>
                     <p className="text-slate-500 dark:text-slate-400 mt-1">
-                        Visualização dos usuários cadastrados no sistema.
+                        Gerenciamento completo de usuários e permissões do sistema.
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -63,10 +73,23 @@ export default async function AdminUsersPage() {
 
             <Card className="shadow-sm border-slate-200 dark:border-slate-800">
                 <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b pb-4">
-                    <CardTitle className="text-lg">Gestão de Usuários</CardTitle>
-                    <CardDescription>
-                        Mostrando todos os {users.length} usuários registrados.
-                    </CardDescription>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <CardTitle className="text-lg">Filtro e Listagem</CardTitle>
+                            <CardDescription>
+                                Mostrando {users.length} usuários {showInactive ? "registrados (incluindo desativados)" : "ativos"}.
+                            </CardDescription>
+                        </div>
+                        <Link href={`/dashboard/admin${showInactive ? "" : "?showInactive=true"}`}>
+                            <Button variant="outline" className="h-9 text-xs font-semibold">
+                                {showInactive ? (
+                                    <><Users className="h-3.5 w-3.5 mr-1.5" /> Mostrar Apenas Ativos</>
+                                ) : (
+                                    <><UserMinus className="h-3.5 w-3.5 mr-1.5" /> Ver Usuários Desativados</>
+                                )}
+                            </Button>
+                        </Link>
+                    </div>
                 </CardHeader>
                 <CardContent className="p-0">
                     <div className="overflow-x-auto">
@@ -76,39 +99,53 @@ export default async function AdminUsersPage() {
                                     <TableHead className="w-[80px]">ID</TableHead>
                                     <TableHead>Nome / Função</TableHead>
                                     <TableHead>Email / Setor</TableHead>
-                                    <TableHead>Perfil</TableHead>
-                                    <TableHead>Conta Criada Em</TableHead>
+                                    <TableHead>Perfil / Status</TableHead>
+                                    <TableHead>Cadastro em</TableHead>
                                     <TableHead className="text-right">Ação</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {users.map((user: any) => (
-                                    <TableRow key={user.id} className="hover:bg-slate-50/50 dark:bg-slate-900/50 transition-colors">
-                                        <TableCell className="font-mono text-xs text-slate-500 dark:text-slate-400">
-                                            {user.id.substring(user.id.length - 6).toUpperCase()}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="font-medium text-slate-900 dark:text-slate-100">{user.name}</div>
-                                            {user.funcao && <div className="text-xs text-slate-500">{user.funcao}</div>}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="text-slate-600 dark:text-slate-400 text-sm">{user.email || "Sem e-mail"}</div>
-                                            {user.setor && <div className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-full inline-block mt-1 font-medium">{user.setor}</div>}
-                                        </TableCell>
-                                        <TableCell>
-                                            {user.role === "ADMIN" && <Badge className="bg-red-500">Admin</Badge>}
-                                            {user.role === "SUPORTE" && <Badge className="bg-blue-500">Suporte</Badge>}
-                                            {user.role === "USUARIO" && <Badge variant="outline">Usuário</Badge>}
-                                        </TableCell>
-                                        <TableCell className="text-sm text-slate-500 dark:text-slate-400">
-                                            {new Date(user.createdAt).toLocaleDateString("pt-BR")}
-                                        </TableCell>
-                                        <TableCell className="text-right whitespace-nowrap">
-                                            <EditUserButton user={user} sectors={sectors} />
-                                            <ResetUserButton userId={user.id} userName={user.name} />
+                                {users.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="h-24 text-center text-slate-500">
+                                            Nenhum usuário encontrado com os filtros atuais.
                                         </TableCell>
                                     </TableRow>
-                                ))}
+                                ) : (
+                                    users.map((user: any) => (
+                                        <TableRow key={user.id} className={`hover:bg-slate-50/50 dark:bg-slate-900/50 transition-colors ${!user.ativo ? "opacity-60 grayscale-[0.5]" : ""}`}>
+                                            <TableCell className="font-mono text-xs text-slate-500 dark:text-slate-400">
+                                                {user.id.substring(user.id.length - 6).toUpperCase()}
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="font-medium text-slate-900 dark:text-slate-100">{user.name}</div>
+                                                {user.funcao && <div className="text-xs text-slate-500">{user.funcao}</div>}
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="text-slate-600 dark:text-slate-400 text-sm">{user.email || "Sem e-mail"}</div>
+                                                {user.setor && <div className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-full inline-block mt-1 font-medium">{user.setor}</div>}
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-col gap-1.5">
+                                                    <div className="flex gap-1">
+                                                        {user.role === "ADMIN" && <Badge className="bg-red-500 hover:bg-red-600">Admin</Badge>}
+                                                        {user.role === "SUPORTE" && <Badge className="bg-blue-500 hover:bg-blue-600">Suporte</Badge>}
+                                                        {user.role === "USUARIO" && <Badge variant="outline">Usuário</Badge>}
+                                                    </div>
+                                                    {!user.ativo && <Badge variant="destructive" className="w-fit text-[10px] py-0 h-4">DESATIVADO</Badge>}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-sm text-slate-500 dark:text-slate-400">
+                                                {new Date(user.createdAt).toLocaleDateString("pt-BR")}
+                                            </TableCell>
+                                            <TableCell className="text-right whitespace-nowrap">
+                                                <EditUserButton user={user} sectors={sectors} />
+                                                <ResetUserButton userId={user.id} userName={user.name} />
+                                                <DeactivateUserButton userId={user.id} userName={user.name} isAtivo={user.ativo} />
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
                             </TableBody>
                         </Table>
                     </div>

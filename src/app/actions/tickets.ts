@@ -73,26 +73,54 @@ export interface TicketFilters {
     q?: string;
     status?: string;
     categoria?: string;
+    atrasado?: boolean;
 }
 
-function buildWhereClause(baseWhere: any, filters?: TicketFilters) {
-    const where = { ...baseWhere };
+interface SLASettings {
+    tempoMaximoAssuncao: number;
+    tempoMaximoConclusao: number;
+}
+
+function buildWhereClause(baseWhere: any, filters?: TicketFilters, sla?: SLASettings) {
+    const and: any[] = [{ ...baseWhere }];
+
     if (filters?.status && filters.status !== "TODOS") {
-        where.status = filters.status;
+        and.push({ status: filters.status });
     }
+
     if (filters?.categoria && filters.categoria !== "TODOS") {
-        where.categoria = filters.categoria;
+        and.push({ categoria: filters.categoria });
     }
+
     if (filters?.q) {
-        where.OR = [
-            { titulo: { contains: filters.q } },
-            { descricao: { contains: filters.q } },
-            { id: { contains: filters.q } },
-            { solicitante: { name: { contains: filters.q } } },
-            { responsavel: { name: { contains: filters.q } } }
-        ];
+        and.push({
+            OR: [
+                { titulo: { contains: filters.q } },
+                { descricao: { contains: filters.q } },
+                { id: { contains: filters.q } },
+                { solicitante: { name: { contains: filters.q } } },
+                { responsavel: { name: { contains: filters.q } } }
+            ]
+        });
     }
-    return where;
+
+    if (filters?.atrasado) {
+        const now = new Date();
+        const tAssuncao = sla?.tempoMaximoAssuncao ?? 24;
+        const tConclusao = sla?.tempoMaximoConclusao ?? 72;
+
+        const assuncaoCutoff = new Date(now.getTime() - tAssuncao * 60 * 60 * 1000);
+        const conclusaoCutoff = new Date(now.getTime() - tConclusao * 60 * 60 * 1000);
+
+        and.push({
+            OR: [
+                { status: "ABERTO", createdAt: { lt: assuncaoCutoff } },
+                { status: { in: ["EM_ANDAMENTO", "AGUARDANDO_USUARIO"] }, createdAt: { lt: conclusaoCutoff } }
+            ]
+        });
+    }
+
+    return { AND: and };
 }
 
 export async function getMyTickets(filters?: TicketFilters) {
@@ -102,7 +130,13 @@ export async function getMyTickets(filters?: TicketFilters) {
         throw new Error("Não autorizado");
     }
 
-    const where = buildWhereClause({ solicitanteId: session.user.id }, filters);
+    let sla = undefined;
+    if (filters?.atrasado) {
+        // @ts-ignore
+        sla = await prisma.setting.findUnique({ where: { id: "global" } });
+    }
+
+    const where = buildWhereClause({ solicitanteId: session.user.id }, filters, sla);
 
     return prisma.ticket.findMany({
         where,
@@ -125,7 +159,13 @@ export async function getAllTickets(filters?: TicketFilters) {
         throw new Error("Não autorizado para ver todos os chamados");
     }
 
-    const where = buildWhereClause({}, filters);
+    let sla = undefined;
+    if (filters?.atrasado) {
+        // @ts-ignore
+        sla = await prisma.setting.findUnique({ where: { id: "global" } });
+    }
+
+    const where = buildWhereClause({}, filters, sla);
 
     return prisma.ticket.findMany({
         where,
@@ -204,18 +244,59 @@ export async function addComment(ticketId: string, texto: string, isInterno: boo
         throw new Error("Comentário excede 10.000 caracteres. Por favor opte por anexar um arquivo para logs enormes.");
     }
     const cleanTexto = texto.replace(/\0/g, "");
-
     const resultComment = await prisma.$transaction(async (tx) => {
-        const ticketState = await tx.ticket.findUnique({ where: { id: ticketId }, select: { status: true, responsavelId: true } });
+        const ticketState = await tx.ticket.findUnique({ 
+            where: { id: ticketId }, 
+            select: { status: true, responsavelId: true, solicitanteId: true } 
+        });
+
+        if (!ticketState) throw new Error("Chamado não encontrado");
 
         // Guard: Ticket Morto. Ninguém pode comentar se estiver "FECHADO" (Terminado Permanente)
-        if (ticketState?.status === "FECHADO") {
+        if (ticketState.status === "FECHADO") {
             throw new Error("Ação Inválida: O ticket está FECHADO e arquivado definitivamente.");
+        }
+
+        // Lógica de Atribuição Automática:
+        // Se o chamado NÃO tem responsável e quem comenta NÃO é um "USUARIO"
+        if (!ticketState.responsavelId && session.user.role !== "USUARIO") {
+            const updateTicketData: any = { responsavelId: session.user.id };
+            // Se estiver "ABERTO", move para "EM_ANDAMENTO"
+            if (ticketState.status === "ABERTO") {
+                updateTicketData.status = "EM_ANDAMENTO";
+                updateTicketData.dataAssuncao = new Date();
+            }
+
+            await tx.ticket.update({
+                where: { id: ticketId },
+                data: updateTicketData
+            });
+
+            await tx.auditLog.create({
+                data: {
+                    acao: "ATRIBUICAO",
+                    detalhes: "Chamado auto-atribuído ao enviar interação.",
+                    ticketId,
+                    userId: session.user.id
+                }
+            });
+
+            // Notifica o solicitante que o chamado foi assumido
+            if (ticketState.solicitanteId !== session.user.id) {
+                await tx.notification.create({
+                    data: {
+                        mensagem: `Seu chamado foi assumido pela equipe técnica.`,
+                        link: `/dashboard/ticket/${ticketId}`,
+                        userId: ticketState.solicitanteId,
+                        ticketId: ticketId
+                    }
+                });
+            }
         }
 
         // Se for marcado como solução, temos que garantir que o ticket não foi fechado correntemente por outra thread
         if (isSolucao && session.user.role !== "USUARIO") {
-            if (ticketState?.status === "RESOLVIDO") {
+            if (ticketState.status === "RESOLVIDO") {
                 throw new Error("Concorrência: Chamado já foi marcado como resolvido.");
             }
         }
@@ -236,22 +317,15 @@ export async function addComment(ticketId: string, texto: string, isInterno: boo
         let detalhesLog = isInterno ? "Nota interna adicionada." : "Comentário público adicionado.";
 
         if (isSolucao && session.user.role !== "USUARIO") {
-            const check = await tx.ticket.findUnique({ where: { id: ticketId } });
-            const updateData: any = { status: "RESOLVIDO" };
-            if (!check?.responsavelId) {
-                updateData.responsavelId = session.user.id;
-            }
-
             await tx.ticket.update({
                 where: { id: ticketId },
                 data: {
-                    ...updateData,
-                    dataResolucao: new Date()
-                }
+                    status: "RESOLVIDO",
+                    dataResolucao: new Date(),
+                    responsavelId: session.user.id 
+                } as any
             });
-            detalhesLog = updateData.responsavelId
-                ? "Chamado auto-atribuído e marcado como resolvido através de solução."
-                : "Chamado marcado como resolvido através de solução.";
+            detalhesLog = "Chamado marcado como resolvido através de solução.";
         }
 
         await tx.auditLog.create({
@@ -264,13 +338,14 @@ export async function addComment(ticketId: string, texto: string, isInterno: boo
         });
 
         if (!isInterno && session.user.role !== "USUARIO") {
-            const t = await tx.ticket.findUnique({ where: { id: ticketId }, select: { solicitanteId: true } });
-            if (t && t.solicitanteId !== session.user.id) {
+            if (ticketState.solicitanteId !== session.user.id) {
                 await tx.notification.create({
                     data: {
-                        mensagem: isSolucao ? `Seu chamado foi concluído! Por favor, avalie a qualidade do nosso suporte.` : `Novo comentário da equipe técnica no seu chamado...`,
+                        mensagem: isSolucao 
+                            ? `Seu chamado foi concluído! Por favor, avalie a qualidade do nosso suporte.` 
+                            : `Novo comentário da equipe técnica no seu chamado...`,
                         link: `/dashboard/ticket/${ticketId}`,
-                        userId: t.solicitanteId,
+                        userId: ticketState.solicitanteId,
                         ticketId: ticketId
                     }
                 });
@@ -314,7 +389,7 @@ export async function updateTicketStatus(ticketId: string, status: string, respo
             detalhes = `Chamado assumido e status alterado para ${status}.`;
         }
 
-        if (status !== "ABERTO" && check.status === "ABERTO" && !check.dataAssuncao) {
+        if (status !== "ABERTO" && check.status === "ABERTO" && !(check as any).dataAssuncao) {
             updateData.dataAssuncao = new Date();
         }
         if (status === "RESOLVIDO") {
@@ -494,7 +569,7 @@ export async function avaliarReabertura(ticketId: string, aceitar: boolean) {
                 status: "EM_ANDAMENTO", 
                 aguardandoReabertura: false,
                 dataResolucao: null // Resetar resolução ao reabrir
-            }
+            } as any
         });
         await prisma.comment.create({
             data: { texto: "✅ A solicitação de reabertura foi ACEITA pela equipe de suporte. O chamado encontra-se Em Andamento novamente.", isInterno: false, ticketId, autorId: session.user.id }
@@ -556,7 +631,10 @@ export async function getAvailableTechnicians() {
     if (!session || !session.user || session.user.role === "USUARIO") throw new Error("Não autorizado");
 
     return prisma.user.findMany({
-        where: { role: { in: ["SUPORTE", "ADMIN"] } },
+        where: { 
+            role: { in: ["SUPORTE", "ADMIN"] },
+            ativo: true as any
+        },
         select: { id: true, name: true, role: true, email: true },
         orderBy: { name: "asc" }
     });
@@ -692,6 +770,7 @@ export async function getSLASettings() {
         throw new Error("Não autorizado");
     }
 
+    // @ts-ignore - Prisma client maybe out of sync in this environment
     return prisma.setting.upsert({
         where: { id: "global" },
         update: {},
@@ -709,6 +788,7 @@ export async function updateSLASettings(data: { tempoMaximoAssuncao: number; tem
         throw new Error("Não autorizado");
     }
 
+    // @ts-ignore - Prisma client maybe out of sync in this environment
     const settings = await prisma.setting.update({
         where: { id: "global" },
         data: {

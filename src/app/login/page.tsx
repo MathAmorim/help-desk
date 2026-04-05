@@ -54,12 +54,12 @@ export default function LoginPage() {
 
     return (
         <div
-            className="flex min-h-[100dvh] w-full flex-col bg-cover bg-center bg-no-repeat bg-[url('/image/acreuna_blueprint-ph.svg')] md:bg-[url('/image/acreuna_blueprint-dt.svg')]"
+            className="flex min-h-[100dvh] w-full flex-col bg-cover bg-center bg-no-repeat bg-[url('/image/acreuna_blueprint-ph.webp')] md:bg-[url('/image/acreuna_blueprint-dt.webp')]"
         >
             <div className="flex flex-1 items-center justify-center p-4 dark:bg-slate-950/80 ">
                 <Card className="w-full max-w-md shadow-2xl border-t-4 border-t-black">
                     <CardHeader className="text-center pb-4">
-                        <div className="flex justify-center -mt-10 -mb-5">
+                        <div className="flex justify-center -mt-2 -mb-1">
                             <img
                                 src="/image/LogoCPD.png"
                                 alt="Logo CPD"

@@ -138,7 +138,7 @@ export default function TicketManager({ ticketId, role, userId, currentStatus, c
                     <SelectContent>
                         <SelectItem value="ABERTO">Aberto</SelectItem>
                         <SelectItem value="EM_ANDAMENTO">Em Andamento</SelectItem>
-                        <SelectItem value="PENDENTE_USUARIO">Pendente (Usuário)</SelectItem>
+                        <SelectItem value="AGUARDANDO_USUARIO">Aguardando Usuário</SelectItem>
                         <SelectItem value="RESOLVIDO">Resolvido</SelectItem>
                     </SelectContent>
                 </Select>
@@ -160,7 +160,7 @@ export default function TicketManager({ ticketId, role, userId, currentStatus, c
                         <SelectContent>
                             <SelectItem value="ABERTO">Aberto</SelectItem>
                             <SelectItem value="EM_ANDAMENTO">Em Andamento</SelectItem>
-                            <SelectItem value="PENDENTE_USUARIO">Pendente (Usuário)</SelectItem>
+                            <SelectItem value="AGUARDANDO_USUARIO">Aguardando Usuário</SelectItem>
                             <SelectItem value="RESOLVIDO">Resolvido</SelectItem>
                         </SelectContent>
                     </Select>

@@ -33,7 +33,8 @@ export default async function TicketDetailsPage({ params }: { params: Promise<{ 
         switch (status) {
             case "ABERTO": return <Badge className="bg-blue-500">Aberto</Badge>;
             case "EM_ANDAMENTO": return <Badge className="bg-amber-500">Em Andamento</Badge>;
-            case "PENDENTE_USUARIO": return <Badge className="bg-purple-500">Pendente Usuário</Badge>;
+            case "PENDENTE_USUARIO":
+            case "AGUARDANDO_USUARIO": return <Badge className="bg-purple-500">Aguardando Usuário</Badge>;
             case "RESOLVIDO": return <Badge className="bg-emerald-500">Resolvido</Badge>;
             default: return <Badge variant="outline">{status}</Badge>;
         }

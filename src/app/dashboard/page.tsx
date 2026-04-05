@@ -28,6 +28,7 @@ export default async function DashboardPage({
         q: typeof sp.q === 'string' ? sp.q : undefined,
         status: typeof sp.status === 'string' ? sp.status : undefined,
         categoria: typeof sp.categoria === 'string' ? sp.categoria : undefined,
+        atrasado: sp.atrasado === 'true',
     };
 
     const isAdminOrSupport = session.user.role === "SUPORTE" || session.user.role === "ADMIN";
@@ -45,7 +46,8 @@ export default async function DashboardPage({
         switch (status) {
             case "ABERTO": return <Badge className="bg-blue-500 hover:bg-blue-600">Aberto</Badge>;
             case "EM_ANDAMENTO": return <Badge className="bg-amber-500 hover:bg-amber-600">Em Andamento</Badge>;
-            case "PENDENTE_USUARIO": return <Badge className="bg-purple-500 hover:bg-purple-600">Pendente Usuário</Badge>;
+            case "PENDENTE_USUARIO":
+            case "AGUARDANDO_USUARIO": return <Badge className="bg-purple-500 hover:bg-purple-600">Aguardando Usuário</Badge>;
             case "RESOLVIDO": return <Badge className="bg-emerald-500 hover:bg-emerald-600">Resolvido</Badge>;
             default: return <Badge variant="outline">{status}</Badge>;
         }
@@ -176,10 +178,10 @@ export default async function DashboardPage({
                                                     <div className="flex flex-col gap-1">
                                                         {renderStatusBadge(ticket.status)}
                                                         {ticket.status === "ABERTO" && (new Date().getTime() - new Date(ticket.createdAt).getTime() > delayAssuncaoLimit) && (
-                                                            <Badge variant="destructive" className="text-[10px] py-0 px-1 animate-pulse h-4 whitespace-nowrap">⏳ SLA ATRASADO</Badge>
+                                                            <Badge variant="destructive" className="text-[10px] py-0 px-1 h-4 whitespace-nowrap">⏳ SLA ATRASADO</Badge>
                                                         )}
-                                                        {ticket.status === "EM_ANDAMENTO" && (new Date().getTime() - new Date(ticket.createdAt).getTime() > delayConclusaoLimit) && (
-                                                            <Badge variant="destructive" className="text-[10px] py-0 px-1 animate-pulse h-4 whitespace-nowrap">🚨 SLA ATRASADO</Badge>
+                                                        {(ticket.status === "EM_ANDAMENTO" || ticket.status === "AGUARDANDO_USUARIO" || ticket.status === "PENDENTE_USUARIO") && (new Date().getTime() - new Date(ticket.createdAt).getTime() > delayConclusaoLimit) && (
+                                                            <Badge variant="destructive" className="text-[10px] py-0 px-1 h-4 whitespace-nowrap">🚨 SLA ATRASADO</Badge>
                                                         )}
                                                     </div>
                                                 )}

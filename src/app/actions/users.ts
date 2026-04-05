@@ -169,3 +169,65 @@ export async function updateUser(data: { id: string; name: string; email?: strin
         user,
     };
 }
+
+export async function deactivateUser(userId: string) {
+    const session = await getServerSession(authOptions);
+
+    if (!session || session.user.role !== "ADMIN") {
+        throw new Error("Não autorizado");
+    }
+
+    if (session.user.id === userId) {
+        throw new Error("Você não pode desativar sua própria conta.");
+    }
+
+    await prisma.user.update({
+        where: { id: userId },
+        data: {
+            ativo: false,
+            deletedAt: new Date()
+        } as any
+    });
+
+    // Registrar no Log de Auditoria
+    const targetUser = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
+    await (prisma.auditLog as any).create({
+        data: {
+            acao: "USUARIO_DESATIVADO",
+            detalhes: `Usuário [${targetUser?.name || userId}] foi desativado pelo administrador.`,
+            userId: session.user.id
+        }
+    });
+
+    revalidatePath("/dashboard/admin");
+    return { success: true };
+}
+
+export async function reactivateUser(userId: string) {
+    const session = await getServerSession(authOptions);
+
+    if (!session || session.user.role !== "ADMIN") {
+        throw new Error("Não autorizado");
+    }
+
+    await prisma.user.update({
+        where: { id: userId },
+        data: {
+            ativo: true,
+            deletedAt: null
+        } as any
+    });
+
+    // Registrar no Log de Auditoria
+    const targetUser = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
+    await (prisma.auditLog as any).create({
+        data: {
+            acao: "USUARIO_REATIVADO",
+            detalhes: `Usuário [${targetUser?.name || userId}] foi reativado pelo administrador.`,
+            userId: session.user.id
+        }
+    });
+
+    revalidatePath("/dashboard/admin");
+    return { success: true };
+}

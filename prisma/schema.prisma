@@ -21,6 +21,8 @@ model User {
   cpf           String?   @unique
   funcao        String?
   setor         String?
+  ativo         Boolean   @default(true)
+  deletedAt     DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -39,7 +41,7 @@ model Ticket {
   titulo        String
   descricao     String
   categoria     String    // Hardware, Software, Rede/Internet, Dúvida, Acessos
-  status        String    @default("ABERTO") // ABERTO, EM_ANDAMENTO, PENDENTE_USUARIO, RESOLVIDO
+  status        String    @default("ABERTO") // ABERTO, EM_ANDAMENTO, AGUARDANDO_USUARIO, RESOLVIDO
   prioridade    String    @default("BAIXA")  // BAIXA, MEDIA, ALTA, CRITICA
   
   // Solicitante contacts
