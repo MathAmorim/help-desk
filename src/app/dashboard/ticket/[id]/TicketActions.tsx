@@ -107,7 +107,7 @@ export default function TicketActions({ ticketId, role, userId, currentStatus, c
 
                     {!isSupportOrAdmin && !aguardandoReabertura && (
                         <div className="pt-2">
-                            <Button onClick={handleSolicitarReabertura} disabled={isLoading} variant="outline" className="border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:bg-slate-800">
+                            <Button onClick={handleSolicitarReabertura} disabled={isLoading} variant="outline" className="h-10 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/10 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm">
                                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                                 Preciso de mais ajuda (Solicitar Reabertura)
                             </Button>
@@ -124,11 +124,11 @@ export default function TicketActions({ ticketId, role, userId, currentStatus, c
                         <div className="space-y-3 mt-4 border-t border-amber-200 dark:border-amber-800/50/50 pt-4 max-w-sm mx-auto">
                             <p className="text-sm font-bold text-amber-700">🚨 O usuário solicitou a reabertura do chamado.</p>
                             <div className="flex justify-center gap-3">
-                                <Button onClick={() => handleAvaliarReabertura(true)} disabled={isLoading} className="bg-emerald-600 hover:bg-emerald-700 flex-1">
+                                <Button onClick={() => handleAvaliarReabertura(true)} disabled={isLoading} variant="outline" className="h-10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm flex-1">
                                     {isLoading ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null}
                                     Aprovar
                                 </Button>
-                                <Button onClick={() => handleAvaliarReabertura(false)} disabled={isLoading} variant="destructive" className="flex-1">
+                                <Button onClick={() => handleAvaliarReabertura(false)} disabled={isLoading} variant="outline" className="h-10 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900 bg-rose-50/50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm flex-1">
                                     {isLoading ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null}
                                     Recusar
                                 </Button>
@@ -155,7 +155,9 @@ export default function TicketActions({ ticketId, role, userId, currentStatus, c
                     </p>
                     <div className="pt-2">
                         <Dialog>
-                            <DialogTrigger className="inline-flex items-center justify-center rounded-md border border-emerald-600 text-emerald-700 hover:bg-emerald-50 w-full sm:w-auto font-medium shadow-sm transition-colors h-9 px-4 py-2 text-sm disabled:opacity-50 disabled:pointer-events-none" disabled={isLoading}>
+                            <DialogTrigger render={
+                                <Button variant="outline" className="h-10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-900 w-full sm:w-auto font-bold shadow-sm transition-all hover:scale-105 active:scale-95" disabled={isLoading} />
+                            }>
                                 Concluir / Cancelar Solicitação
                             </DialogTrigger>
                             <DialogContent className="sm:max-w-md">
@@ -184,7 +186,7 @@ export default function TicketActions({ ticketId, role, userId, currentStatus, c
                                     <DialogClose className="inline-flex items-center justify-center rounded-md border border-slate-300 dark:border-slate-700 bg-transparent text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-medium h-10 px-4 py-2 transition-colors disabled:opacity-50" disabled={isLoading}>
                                         Voltar
                                     </DialogClose>
-                                    <Button onClick={handleEncerrarChamadoUsuario} disabled={isLoading} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm h-10">
+                                    <Button onClick={handleEncerrarChamadoUsuario} disabled={isLoading} variant="outline" className="h-10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm">
                                         {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                                         Sim, encerrar
                                     </Button>
@@ -262,7 +264,11 @@ export default function TicketActions({ ticketId, role, userId, currentStatus, c
                     <Button
                         onClick={handleAddComment}
                         disabled={isLoading || !comentario.trim()}
-                        className={isInterno ? "bg-amber-600 hover:bg-amber-700 text-white" : ""}
+                        variant="outline"
+                        className={isInterno 
+                            ? "h-10 text-amber-600 dark:text-amber-500 border-amber-200 dark:border-amber-900 bg-amber-50/50 dark:bg-amber-950/20 hover:bg-amber-100 dark:hover:bg-amber-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm"
+                            : "h-10 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900 bg-indigo-50/50 dark:bg-indigo-950/20 hover:bg-indigo-100 dark:hover:bg-indigo-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm"
+                        }
                     >
                         {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                         {isInterno ? "Salvar Nota Interna" : "Enviar Mensagem"}

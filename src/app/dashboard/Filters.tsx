@@ -105,13 +105,13 @@ export function Filters({ categoriasDisponiveis }: { categoriasDisponiveis: stri
                 </Select>
             </div>
 
-            <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
-                <Button type="submit" variant="secondary" className="flex-1 sm:flex-none h-10">
+            <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0 items-end">
+                <Button type="submit" variant="outline" className="h-10 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900 bg-indigo-50/50 dark:bg-indigo-950/20 hover:bg-indigo-100 dark:hover:bg-indigo-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm flex-1 sm:flex-none">
                     Filtrar
                 </Button>
                 {(q || status !== "TODOS" || categoria !== "TODOS") && (
-                    <Button type="button" variant="ghost" className="px-3 h-10 border" onClick={handleClear} title="Limpar Filtros">
-                        <X className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+                    <Button type="button" variant="outline" className="h-10 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900 bg-rose-50/50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-900 transition-all hover:scale-105 active:scale-95 shadow-sm px-3" onClick={handleClear} title="Limpar Filtros">
+                        <X className="h-4 w-4" />
                     </Button>
                 )}
             </div>

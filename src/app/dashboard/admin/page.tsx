@@ -46,14 +46,14 @@ export default async function AdminUsersPage() {
                         Visualização dos usuários cadastrados no sistema.
                     </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                     <Link href="/dashboard/admin/sla">
-                        <Button variant="outline" className="h-10 text-amber-600 dark:text-amber-500 border-amber-200 dark:border-amber-900 bg-amber-50/50 dark:bg-amber-950/20 hover:bg-amber-100 dark:hover:bg-amber-900">
+                        <Button variant="outline" className="h-10 text-amber-600 dark:text-amber-500 border-amber-200 dark:border-amber-900 bg-amber-50/50 dark:bg-amber-950/20 hover:bg-amber-100 dark:hover:bg-amber-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm">
                              SLA & Automação
                         </Button>
                     </Link>
                     <Link href="/dashboard/admin/setores">
-                        <Button variant="outline" className="h-10 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900 bg-indigo-50/50 dark:bg-indigo-950/20 hover:bg-indigo-100 dark:hover:bg-indigo-900">
+                        <Button variant="outline" className="h-10 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900 bg-indigo-50/50 dark:bg-indigo-950/20 hover:bg-indigo-100 dark:hover:bg-indigo-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm">
                             Gerenciar Setores
                         </Button>
                     </Link>

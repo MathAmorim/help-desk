@@ -34,7 +34,7 @@ export default function SectorClient({ initialSectors }: { initialSectors: Secto
         <div className="max-w-7xl mx-auto space-y-6">
             <div className="flex items-center gap-4">
                 <Link href="/dashboard/admin">
-                    <Button variant="outline" size="icon">
+                    <Button variant="outline" size="icon" className="h-10 w-10 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/10 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all hover:scale-105 active:scale-95 shadow-sm">
                         <ArrowLeft className="h-4 w-4" />
                     </Button>
                 </Link>
@@ -104,7 +104,9 @@ function SectorCard({ sector, allSectors }: { sector: SectorInfo, allSectors: st
                     </div>
 
                     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                        <DialogTrigger className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-8 px-3">
+                        <DialogTrigger render={
+                            <Button variant="outline" className="h-8 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/10 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all hover:scale-105 active:scale-95 shadow-sm px-3" />
+                        }>
                             <PencilLine className="h-4 w-4 mr-2 text-slate-500" />
                             Gerenciar
                         </DialogTrigger>
@@ -157,7 +159,7 @@ function SectorCard({ sector, allSectors }: { sector: SectorInfo, allSectors: st
                                         </datalist>
                                     </div>
                                     <div className="flex justify-end mt-4">
-                                        <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white" disabled={isSubmitting || !newSectorName || newSectorName.trim() === sector.name}>
+                                        <Button type="submit" variant="outline" className="h-10 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900 bg-indigo-50/50 dark:bg-indigo-950/20 hover:bg-indigo-100 dark:hover:bg-indigo-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm" disabled={isSubmitting || !newSectorName || newSectorName.trim() === sector.name}>
                                             {isSubmitting ? (
                                                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Migrando Todos...</>
                                             ) : (
@@ -239,13 +241,13 @@ function UserInlineRow({ user, allSectors }: { user: UserInfo, allSectors: strin
                         <datalist id={`list-${user.id}`}>
                             {allSectors.map(s => <option key={s} value={s} />)}
                         </datalist>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-green-600" onClick={handleSave} disabled={isSaving}>
+                        <Button size="icon" variant="outline" className="h-7 w-7 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-900 transition-all hover:scale-110 shadow-sm" onClick={handleSave} disabled={isSaving}>
                             {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                         </Button>
                     </div>
                 ) : (
-                    <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => setIsEditing(true)}>
-                        <PencilLine className="h-3 w-3 mr-1" /> Editar
+                    <Button variant="outline" size="sm" className="h-7 text-xs px-2 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/10 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all hover:scale-105 shadow-sm" onClick={() => setIsEditing(true)}>
+                        <PencilLine className="h-3 w-3 mr-1 text-slate-500" /> Editar
                     </Button>
                 )}
                 <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-1 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded">

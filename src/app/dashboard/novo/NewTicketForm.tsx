@@ -78,7 +78,7 @@ export default function NewTicketForm({ categorias, userSetor = "", userRole = "
         <div className="max-w-3xl mx-auto space-y-6">
             <div className="flex items-center gap-4">
                 <Link href="/dashboard">
-                    <Button variant="outline" size="icon">
+                    <Button variant="outline" size="icon" className="h-10 w-10 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/10 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all hover:scale-105 active:scale-95 shadow-sm">
                         <ArrowLeft className="h-4 w-4" />
                     </Button>
                 </Link>
@@ -194,9 +194,11 @@ export default function NewTicketForm({ categorias, userSetor = "", userRole = "
                     </CardContent>
                     <CardFooter className="flex justify-end gap-3 border-t bg-slate-50/50 dark:bg-slate-900/50 p-6">
                         <Link href="/dashboard">
-                            <Button variant="outline" type="button" disabled={isLoading}>Cancelar</Button>
+                            <Button variant="outline" type="button" disabled={isLoading} className="h-10 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/10 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all hover:scale-105 active:scale-95 shadow-sm">
+                                Cancelar
+                            </Button>
                         </Link>
-                        <Button type="submit" className="bg-black text-white hover:bg-black/80" disabled={isLoading}>
+                        <Button type="submit" variant="outline" className="h-10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm" disabled={isLoading}>
                             {isLoading ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

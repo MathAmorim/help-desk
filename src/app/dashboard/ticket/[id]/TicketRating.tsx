@@ -71,7 +71,8 @@ export function TicketRating({ ticketId }: { ticketId: string }) {
             <Button
                 onClick={handleSubmit}
                 disabled={nota === 0 || isLoading}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 font-semibold"
+                variant="outline"
+                className="h-10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm w-full"
             >
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 Enviar Avaliação

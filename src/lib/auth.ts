@@ -45,12 +45,25 @@ export const authOptions: NextAuthOptions = {
                 }
 
                 if (!user) {
+                    await (prisma.auditLog as any).create({
+                        data: {
+                            acao: "LOGIN_FAILED",
+                            detalhes: `Tentativa de login falhou: Usuário [${identifier}] não encontrado. IP: ${ip}`
+                        }
+                    });
                     throw new Error("Usuário não encontrado ou credenciais incorretas.");
                 }
 
                 const isValid = await bcrypt.compare(credentials.password, user.password);
 
                 if (!isValid) {
+                    await (prisma.auditLog as any).create({
+                        data: {
+                            acao: "LOGIN_FAILED",
+                            userId: user.id,
+                            detalhes: `Tentativa de login falhou: Senha incorreta para o usuário ${user.name} (${user.cpf}). IP: ${ip}`
+                        }
+                    });
                     throw new Error("Senha incorreta.");
                 }
 

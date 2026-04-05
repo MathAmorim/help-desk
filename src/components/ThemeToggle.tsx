@@ -53,9 +53,9 @@ export function ThemeToggle() {
             title="Alternar Modo Escuro (Salvo na Conta)"
         >
             {theme === "dark" ? (
-                <Sun className="h-5 w-5 text-slate-100" />
+                <Sun className="h-5 w-5 text-amber-400" />
             ) : (
-                <Moon className="h-5 w-5 text-slate-700" />
+                <Moon className="h-5 w-5 text-indigo-600" />
             )}
             <span className="sr-only">Alternar tema</span>
         </Button>

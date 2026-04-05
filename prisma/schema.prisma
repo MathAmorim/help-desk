@@ -113,8 +113,8 @@ model AuditLog {
   acao          String    // ABERTURA, MUDANCA_STATUS, COMENTARIO, ATRIBUICAO, FECHAMENTO
   detalhes      String?   // Ex: 'Status alterado de ABERTO para EM_ANDAMENTO'
   
-  ticketId      String
-  ticket        Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  ticketId      String?
+  ticket        Ticket?   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   
   userId        String?
   user          User?     @relation(fields: [userId], references: [id])

@@ -45,7 +45,9 @@ export default function ResetUserButton({ userId, userName }: { userId: string, 
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger render={<Button variant="ghost" size="sm" className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:bg-amber-900/40" />}>
+            <DialogTrigger render={
+                <Button variant="outline" size="sm" className="h-8 text-amber-600 dark:text-amber-500 border-amber-200 dark:border-amber-900 bg-amber-50/50 dark:bg-amber-950/20 hover:bg-amber-100 dark:hover:bg-amber-900 transition-all hover:scale-105 active:scale-95 shadow-sm" />
+            }>
                 <KeyRound className="h-4 w-4 mr-2" />
                 Resetar Senha
             </DialogTrigger>
@@ -67,10 +69,10 @@ export default function ResetUserButton({ userId, userName }: { userId: string, 
                         )}
 
                         <DialogFooter className="mt-4">
-                            <Button variant="outline" onClick={() => setOpen(false)} disabled={isPending}>
+                            <Button variant="outline" onClick={() => setOpen(false)} disabled={isPending} className="h-10 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/10 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all hover:scale-105 active:scale-95 shadow-sm">
                                 Cancelar
                             </Button>
-                            <Button variant="destructive" onClick={handleReset} disabled={isPending} className="bg-amber-600 hover:bg-amber-700">
+                            <Button variant="outline" onClick={handleReset} disabled={isPending} className="h-10 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900 bg-rose-50/50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm">
                                 {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                                 Confirmar e Gerar Senha
                             </Button>
@@ -102,7 +104,7 @@ export default function ResetUserButton({ userId, userName }: { userId: string, 
                             </div>
                         </div>
 
-                        <Button className="w-full" onClick={handleClose}>
+                        <Button variant="outline" className="w-full h-10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm" onClick={handleClose}>
                             Concluir
                         </Button>
                     </div>

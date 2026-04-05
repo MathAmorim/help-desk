@@ -106,9 +106,14 @@ export default function NotificationBell() {
                 <div className="flex items-center justify-between p-4 border-b dark:border-slate-800">
                     <h4 className="font-semibold text-sm">Notificações</h4>
                     {notifications.length > 0 && (
-                        <button onClick={handleMarkAllAsRead} className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:underline">
-                            Marcar lidas
-                        </button>
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={handleMarkAllAsRead} 
+                            className="h-7 text-[10px] uppercase font-bold text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900 bg-indigo-50/50 dark:bg-indigo-950/10 hover:bg-indigo-100 dark:hover:bg-indigo-900 transition-all px-2 shadow-sm"
+                        >
+                            Limpar Tudo
+                        </Button>
                     )}
                 </div>
                 <div className="max-h-80 overflow-y-auto">

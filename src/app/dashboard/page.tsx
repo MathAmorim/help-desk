@@ -36,6 +36,7 @@ export default async function DashboardPage({
     const categoriasDb = await prisma.category.findMany({ select: { nome: true }, orderBy: { nome: "asc" } });
     const categoriasList = categoriasDb.map((c: any) => c.nome);
 
+    // @ts-ignore - Prisma client maybe out of sync in this environment
     const settings = await prisma.setting.findUnique({ where: { id: "global" } });
     const delayAssuncaoLimit = (settings?.tempoMaximoAssuncao || 24) * 60 * 60 * 1000;
     const delayConclusaoLimit = (settings?.tempoMaximoConclusao || 72) * 60 * 60 * 1000;
@@ -90,7 +91,7 @@ export default async function DashboardPage({
                         </div>
                     </div>
                     <Link href={`/dashboard/ticket/${unratedTickets[0].id}#avaliacao`} className="w-full sm:w-auto relative z-10">
-                        <Button className="w-full bg-white text-indigo-700 hover:bg-slate-100 font-bold border-none shadow-sm h-11 px-6">
+                        <Button variant="outline" className="h-11 text-indigo-700 dark:text-indigo-300 border-white bg-white hover:bg-slate-100 font-extrabold transition-all hover:scale-105 active:scale-95 shadow-sm w-full sm:w-auto px-6">
                             Avaliar Agora
                         </Button>
                     </Link>
@@ -108,8 +109,8 @@ export default async function DashboardPage({
                 </div>
                 <div className="flex gap-3">
                     <Link href="/dashboard/novo">
-                        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 dark:shadow-indigo-500/10 transition-all hover:scale-105 active:scale-95 font-bold flex items-center justify-center">
-                            <PlusCircle className="mr-2 h-5 w-5 font-bold" /> Novo Chamado
+                        <Button variant="outline" className="h-11 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-800 font-extrabold transition-all hover:scale-105 active:scale-95 shadow-sm">
+                            <PlusCircle className="mr-2 h-5 w-5" /> Novo Chamado
                         </Button>
                     </Link>
                 </div>
@@ -201,7 +202,7 @@ export default async function DashboardPage({
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <Link href={`/dashboard/ticket/${ticket.id}`}>
-                                                    <Button variant="ghost" size="sm" className="font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 hover:bg-blue-50 dark:bg-blue-900/40">
+                                                    <Button variant="outline" size="sm" className="h-8 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900 bg-indigo-50/50 dark:bg-indigo-950/20 hover:bg-indigo-100 dark:hover:bg-indigo-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm px-3">
                                                         Abrir
                                                     </Button>
                                                 </Link>

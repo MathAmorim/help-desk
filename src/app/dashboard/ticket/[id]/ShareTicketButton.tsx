@@ -28,7 +28,11 @@ export default function ShareTicketButton({ ticketIdHex, ticketTitle }: Props) {
     };
 
     return (
-        <Button variant="outline" onClick={handleShare} className="gap-2 shrink-0 border-indigo-200 text-indigo-700 bg-indigo-50/50 hover:bg-indigo-100 hover:text-indigo-800 dark:border-indigo-800 dark:text-indigo-300 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50">
+        <Button 
+            variant="outline" 
+            onClick={handleShare} 
+            className="h-10 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900 bg-indigo-50/50 dark:bg-indigo-950/20 hover:bg-indigo-100 dark:hover:bg-indigo-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm gap-2 shrink-0"
+        >
             {copied ? <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> : <Share2 className="h-4 w-4" />}
             <span className="hidden sm:inline text-sm font-medium">{copied ? "Copiado!" : "Copiar Link do Chamado"}</span>
         </Button>

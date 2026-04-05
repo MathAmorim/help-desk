@@ -41,7 +41,7 @@ export default function SLASettingsForm({ initialData }: SLASettingsFormProps) {
         <div className="space-y-6 max-w-2xl mx-auto">
             <div className="flex items-center gap-4 mb-4">
                 <Link href="/dashboard/admin">
-                    <Button variant="ghost" size="icon">
+                    <Button variant="outline" size="icon" className="h-10 w-10 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/10 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all hover:scale-105 active:scale-95 shadow-sm">
                         <ArrowLeft className="h-4 w-4" />
                     </Button>
                 </Link>
@@ -105,7 +105,8 @@ export default function SLASettingsForm({ initialData }: SLASettingsFormProps) {
                     <Button 
                         onClick={handleSave} 
                         disabled={loading}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2 font-bold min-w-[140px]"
+                        variant="outline"
+                        className="h-10 text-amber-600 dark:text-amber-500 border-amber-200 dark:border-amber-900 bg-amber-50/50 dark:bg-amber-950/20 hover:bg-amber-100 dark:hover:bg-amber-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm min-w-[140px] gap-2"
                     >
                         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                         Salvar SLA

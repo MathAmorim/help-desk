@@ -197,7 +197,7 @@ export default function TicketManager({ ticketId, role, userId, currentStatus, c
                 </div>
 
                 {!responsavelId && (
-                    <Button onClick={handleAssumirChamado} disabled={isUpdatingStatus} className="bg-indigo-600 hover:bg-indigo-700 w-full">
+                    <Button onClick={handleAssumirChamado} disabled={isUpdatingStatus} variant="outline" className="h-10 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900 bg-indigo-50/50 dark:bg-indigo-950/20 hover:bg-indigo-100 dark:hover:bg-indigo-900 w-full font-bold transition-all hover:scale-105 active:scale-95 shadow-sm">
                         {isUpdatingStatus ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <UserCheck className="h-4 w-4 mr-2" />}
                         Assumir Atendimento
                     </Button>
@@ -210,9 +210,9 @@ export default function TicketManager({ ticketId, role, userId, currentStatus, c
                     {techs.length > 0 ? (
                         <div className="flex flex-wrap gap-2 mb-3">
                             {techs.map(t => (
-                                <div key={t.id} className="bg-slate-200 text-slate-800 dark:text-slate-200 text-xs px-2 py-1 rounded-md flex items-center gap-1 font-medium">
+                                <div key={t.id} className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs px-2 py-1 rounded-md flex items-center gap-1 font-medium shadow-sm">
                                     {t.name}
-                                    <button onClick={() => handleDesvincular(t.id)} className="text-slate-500 dark:text-slate-400 hover:text-red-500 ml-1 rounded-full p-0.5 hover:bg-slate-300 transition-colors">
+                                    <button onClick={() => handleDesvincular(t.id)} className="text-rose-500 hover:text-rose-700 ml-1 rounded-full p-0.5 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors">
                                         &times;
                                     </button>
                                 </div>

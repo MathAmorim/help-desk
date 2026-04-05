@@ -13,7 +13,7 @@ import { useSession } from "next-auth/react";
 function SubmitButton() {
     const { pending } = useFormStatus();
     return (
-        <Button className="w-full bg-black text-white hover:bg-black/80" type="submit" disabled={pending}>
+        <Button variant="outline" className="h-10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-900 w-full font-bold transition-all hover:scale-105 active:scale-95 shadow-sm" type="submit" disabled={pending}>
             {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
             Salvar Alterações
         </Button>

@@ -61,7 +61,9 @@ export default function NewUserButton({ sectors = [] }: { sectors?: string[] }) 
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger render={<Button className="bg-black text-white hover:bg-black/80" />}>
+            <DialogTrigger render={
+                <Button variant="outline" className="h-10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm" />
+            }>
                 <UserPlus className="mr-2 h-4 w-4" /> Cadastrar Usuário
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
@@ -136,10 +138,10 @@ export default function NewUserButton({ sectors = [] }: { sectors?: string[] }) 
                         </div>
 
                         <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                            <Button type="button" variant="outline" onClick={() => setOpen(false)} className="h-10 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/10 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all hover:scale-105 active:scale-95 shadow-sm">
                                 Cancelar
                             </Button>
-                            <Button type="submit" disabled={isPending}>
+                            <Button type="submit" variant="outline" className="h-10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm" disabled={isPending}>
                                 {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                                 Criar Conta e Gerar Senha
                             </Button>
@@ -174,7 +176,7 @@ export default function NewUserButton({ sectors = [] }: { sectors?: string[] }) 
                             </div>
                         </div>
 
-                        <Button className="w-full" onClick={handleClose}>
+                        <Button variant="outline" className="w-full h-10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm" onClick={handleClose}>
                             Concluir
                         </Button>
                     </div>

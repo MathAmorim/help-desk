@@ -42,9 +42,9 @@ export default function PeriodFilter({ currentPeriod }: { currentPeriod: string 
                         className="flex h-9 w-full rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-1 pr-9 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-600 sm:w-[160px]"
                     />
                     <Button
-                        variant="ghost"
+                        variant="outline"
                         size="icon"
-                        className="absolute right-0 h-9 w-9 text-slate-400 hover:text-slate-600 dark:text-slate-400 bg-transparent"
+                        className="absolute right-0 h-9 w-9 text-rose-500 dark:text-rose-400 border-transparent bg-transparent hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all"
                         onClick={() => handleChange("mes")}
                         title="Limpar filtro"
                     >
@@ -54,7 +54,7 @@ export default function PeriodFilter({ currentPeriod }: { currentPeriod: string 
                 </div>
             ) : (
                 <div className="relative inline-flex group">
-                    <Button variant="outline" size="icon" className="h-9 w-9 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 group-hover:bg-slate-100 dark:bg-slate-800 group-hover:text-slate-900" title="Escolher mês específico">
+                    <Button variant="outline" size="icon" className="h-9 w-9 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-950/20 hover:bg-blue-100 dark:hover:bg-blue-900 transition-all hover:scale-105 shadow-sm" title="Escolher mês específico">
                         <CalendarIcon className="h-4 w-4" />
                     </Button>
                     <input
