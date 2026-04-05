@@ -11,6 +11,11 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Headset, Loader2, KeyRound } from "lucide-react";
 
+import Image from "next/image";
+import bgDesktop from "@/assets/images/acreuna_blueprint-dt.webp";
+import bgMobile from "@/assets/images/acreuna_blueprint-ph.webp";
+import logoCpd from "@/assets/images/LogoCPD.png";
+
 export default function LoginPage() {
     const { data: session, status } = useSession();
     const router = useRouter();
@@ -53,17 +58,35 @@ export default function LoginPage() {
     }
 
     return (
-        <div
-            className="flex min-h-[100dvh] w-full flex-col bg-cover bg-center bg-no-repeat bg-[url('/image/acreuna_blueprint-ph.webp')] md:bg-[url('/image/acreuna_blueprint-dt.webp')]"
-        >
-            <div className="flex flex-1 items-center justify-center p-4 dark:bg-slate-950/80 ">
+        <div className="flex min-h-[100dvh] w-full flex-col relative overflow-hidden">
+            {/* Background Images with Blur Placeholder */}
+            <Image
+                src={bgDesktop}
+                alt=""
+                fill
+                priority
+                placeholder="blur"
+                className="hidden md:block object-cover object-center -z-10"
+            />
+            <Image
+                src={bgMobile}
+                alt=""
+                fill
+                priority
+                placeholder="blur"
+                className="block md:hidden object-cover object-center -z-10"
+            />
+
+            <div className="flex flex-1 items-center justify-center p-4 dark:bg-slate-950/80 relative z-10">
                 <Card className="w-full max-w-md shadow-2xl border-t-4 border-t-black">
                     <CardHeader className="text-center pb-4">
                         <div className="flex justify-center -mt-2 -mb-1">
-                            <img
-                                src="/image/LogoCPD.png"
+                            <Image
+                                src={logoCpd}
                                 alt="Logo CPD"
-                                className="h-40 w-auto object-contain drop-shadow-md"
+                                height={160}
+                                placeholder="blur"
+                                className="w-auto object-contain drop-shadow-md"
                             />
                         </div>
                         <CardTitle className="text-2xl font-bold tracking-tight mt-0">Portal de Chamados</CardTitle>
