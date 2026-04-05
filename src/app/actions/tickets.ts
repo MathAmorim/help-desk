@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { checkRateLimitUser } from "@/lib/rate-limit";
+import { normalizeSearchText } from "@/lib/utils";
 
 export async function createTicket(data: {
     titulo: string;
@@ -50,6 +51,7 @@ export async function createTicket(data: {
             contatoOpcional: cleanContato,
             paraOutraPessoa: data.paraOutraPessoa,
             solicitanteId: session.user.id,
+            searchVector: normalizeSearchText(`${cleanTitle} ${cleanDesc} ${data.departamento || ""} ${session.user.name || ""}`),
             attachments: data.attachmentIds && data.attachmentIds.length > 0 ? {
                 connect: data.attachmentIds.map(id => ({ id }))
             } : undefined
@@ -93,13 +95,11 @@ function buildWhereClause(baseWhere: any, filters?: TicketFilters, sla?: SLASett
     }
 
     if (filters?.q) {
+        const normalizedQ = normalizeSearchText(filters.q);
         and.push({
             OR: [
-                { titulo: { contains: filters.q } },
-                { descricao: { contains: filters.q } },
-                { id: { contains: filters.q } },
-                { solicitante: { name: { contains: filters.q } } },
-                { responsavel: { name: { contains: filters.q } } }
+                { searchVector: { contains: normalizedQ } },
+                { id: { contains: filters.q } } // ID mantém busca literal
             ]
         });
     }
@@ -137,6 +137,7 @@ export async function getMyTickets(filters?: TicketFilters) {
     }
 
     const where = buildWhereClause({ solicitanteId: session.user.id }, filters, sla);
+    const normalizedQ = filters?.q ? normalizeSearchText(filters.q) : "";
 
     return prisma.ticket.findMany({
         where,

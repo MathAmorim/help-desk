@@ -31,7 +31,7 @@ export default function UserFilters() {
             <div className="max-w-md relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                 <Input
-                    placeholder="Buscar por nome, setor ou cargo..."
+                    placeholder="Buscar por nome, CPF, setor ou cargo"
                     className="pl-9 h-10 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800"
                     value={q}
                     onChange={(e) => setQ(e.target.value)}

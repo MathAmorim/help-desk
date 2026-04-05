@@ -168,6 +168,7 @@ if [ "$IS_UPDATE" = false ]; then
 DATABASE_URL="$DB_URL"
 NEXTAUTH_SECRET="$(openssl rand -base64 32)"
 NEXTAUTH_URL="$BASE_URL"
+MIGRATION_SECRET="$(openssl rand -hex 32)"
 NODE_ENV="production"
 EOF
 
@@ -209,9 +210,10 @@ npm install --silent
 log_info "Executando Correção Heurística de Vulnerabilidades (Audit Fix Force)"
 npm audit fix --force > /dev/null 2>&1 || true
 
-log_info "Propagando DB Schemas (Prisma Push)"
+log_info "Propagando DB Schemas (Prisma Migrate)"
 npx prisma generate
-npx prisma db push --accept-data-loss
+npx prisma migrate deploy
+npx prisma db push --accept-data-loss # Mantendo como fallback caso migrações falhem em ambientes SQLite puristas
 
 # ==========================================
 # 7. SEEDING DE BASE DE DADOS
@@ -266,6 +268,20 @@ pm2 delete "help-desk" > /dev/null 2>&1 || true
 pm2 start npm --name "help-desk" -- run start > /dev/null 2>&1
 pm2 save > /dev/null 2>&1
 log_success "PM2 Tracker operacional."
+
+# ==========================================
+# 8.5 MIGRAÇÃO DE DADOS PÓS-DEPLOY
+# ==========================================
+log_header "[6.5/8] Orquestração de Dados (Migration Bridge)"
+MIGRATION_SECRET=$(grep MIGRATION_SECRET .env | cut -d '"' -f 2)
+if [ -n "$MIGRATION_SECRET" ]; then
+    log_info "Disparando migração de status e configurações (Tradução Pendente -> Aguardando)..."
+    # Aguarda 5 segundos para o Next.js subir completamente antes do curl
+    sleep 5
+    curl -X POST -H "x-migration-secret: $MIGRATION_SECRET" http://localhost:3000/api/admin/migrate-db || log_warn "Não foi possível disparar a migração automática via rede local. Acesse manualmente se necessário."
+else
+    log_warn "MIGRATION_SECRET não encontrado. Pulei a migração de dados automática."
+fi
 
 # ==========================================
 # 9. NGINX ESTRUTURA E PROXY REVERSO

@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { normalizeSearchText } from "@/lib/utils";
 
 // Helper para gerar string aleatória de 8 caracteres alfanuméricos complexos
 function generateRandomPassword() {
@@ -75,6 +76,7 @@ export async function createUser(data: { name: string; email?: string; role: str
             setor: setor || null,
             password: hashedPassword,
             mustChangePassword: true,
+            searchVector: normalizeSearchText(`${name} ${email || ""} ${cleanedCpf} ${setor || ""} ${funcao || ""}`)
         },
     });
 
@@ -159,6 +161,7 @@ export async function updateUser(data: { id: string; name: string; email?: strin
             cpf: cleanedCpf,
             funcao: funcao || null,
             setor: setor || null,
+            searchVector: normalizeSearchText(`${name} ${email || ""} ${cleanedCpf} ${setor || ""} ${funcao || ""}`)
         },
     });
 

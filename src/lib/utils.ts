@@ -23,3 +23,15 @@ export function timeAgo(date: Date | string) {
   const diffInMonths = Math.round(diffInMs / (1000 * 60 * 60 * 24 * 30));
   return rtf.format(diffInMonths, 'month');
 }
+
+/**
+ * Remove acentos e converte para minúsculas para busca insensível a diacríticos.
+ */
+export function normalizeSearchText(text: string | null | undefined): string {
+  if (!text) return "";
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}

@@ -14,6 +14,7 @@ import { Users, UserMinus } from "lucide-react";
 
 import UserFilters from "./UserFilters";
 import SortButton from "./SortButton";
+import { normalizeSearchText } from "@/lib/utils";
 
 export default async function AdminUsersPage({ searchParams }: { searchParams: Promise<{ showInactive?: string; q?: string; sortBy?: string; order?: string }> }) {
     const session = await getServerSession(authOptions);
@@ -52,12 +53,10 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
     }
 
     if (q) {
+        const normalizedQ = normalizeSearchText(q);
         where.AND.push({
             OR: [
-                { name: { contains: q } },
-                { email: { contains: q } },
-                { funcao: { contains: q } },
-                { setor: { contains: q } },
+                { searchVector: { contains: normalizedQ } },
                 { cpf: { contains: q } }
             ]
         });
