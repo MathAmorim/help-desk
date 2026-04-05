@@ -13,6 +13,7 @@ import { TicketRating } from "./TicketRating";
 import { timeAgo } from "@/lib/utils";
 import PrintTicketButton from "./PrintTicketButton";
 import ShareTicketButton from "./ShareTicketButton";
+import TicketChatBox from "./TicketChatBox";
 import { notFound } from "next/navigation";
 export default async function TicketDetailsPage({ params }: { params: Promise<{ id: string }> }) {
     const session = await getServerSession(authOptions);
@@ -175,61 +176,11 @@ export default async function TicketDetailsPage({ params }: { params: Promise<{ 
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                            {ticket.comments.length === 0 && (
-                                <div className="text-center text-slate-500 dark:text-slate-400 py-6 italic">
-                                    Nenhuma interação até o momento.
-                                </div>
-                            )}
-
-                            <div className="space-y-4">
-                                {ticket.comments.map((comment: any) => (
-                                    <div key={comment.id} className={`flex flex-col ${comment.isInterno ? "items-start" : ""}`}>
-                                        <div className={`
-                      max-w-[90%] sm:max-w-[80%] rounded-lg p-4 
-                      ${comment.isInterno
-                                                ? "bg-amber-50 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-800/50 ml-4"
-                                                : comment.autor.role === "USUARIO"
-                                                    ? "bg-slate-100 dark:bg-slate-800 border"
-                                                    : "bg-blue-50 dark:bg-blue-900/40 border border-blue-100 dark:border-blue-800/50 mr-4"}
-                    `}>
-                                            <div className="flex items-center justify-between mb-2 gap-4">
-                                                <span className="font-semibold text-sm flex items-center gap-2">
-                                                    {comment.autor.name}
-                                                    {comment.autor.role !== "USUARIO" && (
-                                                        <Badge variant="outline" className="text-[10px] py-0 h-4">{comment.autor.role}</Badge>
-                                                    )}
-                                                    {comment.isInterno && (
-                                                        <Badge variant="destructive" className="bg-amber-500 text-white text-[10px] py-0 h-4 flex items-center">
-                                                            <Lock className="h-2.5 w-2.5 mr-1" /> Interno
-                                                        </Badge>
-                                                    )}
-                                                </span>
-                                                <span className="text-xs text-slate-400 font-medium">
-                                                    {new Date(comment.createdAt).toLocaleString("pt-BR", {
-                                                        day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"
-                                                    })}
-                                                </span>
-                                            </div>
-                                            <p className="text-slate-700 dark:text-slate-300 text-sm whitespace-pre-wrap">{comment.texto}</p>
-
-                                            {comment.attachments && comment.attachments.length > 0 && (
-                                                <div className="mt-3 flex flex-wrap gap-2">
-                                                    {comment.attachments.map((att: any) => (
-                                                        <a key={att.id} href={att.fileUrl} target="_blank" rel="noopener noreferrer"
-                                                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded border transition-colors shadow-sm
-                                                           ${comment.isInterno ? "bg-amber-100/50 dark:bg-amber-900/40 border-amber-200 dark:border-amber-800/50 text-amber-800 dark:text-amber-400 hover:bg-amber-100"
-                                                                    : comment.autor.role === "USUARIO" ? "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:bg-slate-900"
-                                                                        : "bg-blue-100/50 border-blue-200 text-blue-800 dark:text-blue-400 hover:bg-blue-100"}`}>
-                                                            <Paperclip className="h-3 w-3 opacity-70" />
-                                                            <span className="truncate max-w-[180px] font-medium">{att.fileName}</span>
-                                                        </a>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                            
+                            <TicketChatBox 
+                                ticketId={ticket.id} 
+                                userId={session.user.id} 
+                            />
 
                             <Separator />
 

@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from "@/components/ui/label";
 import { Loader2, Send, Lock, UserCheck, CheckCircle } from "lucide-react";
 
+import { useSWRConfig } from "swr";
+
 interface TicketActionsProps {
     ticketId: string;
     role: string;
@@ -25,6 +27,7 @@ interface TicketActionsProps {
 
 export default function TicketActions({ ticketId, role, userId, currentStatus, currentCategory, responsavelId, aguardandoReabertura, currentPriority, tecnicosSecundarios }: TicketActionsProps) {
     const isSupportOrAdmin = role === "SUPORTE" || role === "ADMIN";
+    const { mutate } = useSWRConfig();
 
     const [comentario, setComentario] = useState("");
     const [motivoCancelamento, setMotivoCancelamento] = useState("");
@@ -37,6 +40,13 @@ export default function TicketActions({ ticketId, role, userId, currentStatus, c
     async function handleAddComment() {
         if (!comentario.trim() && files.length === 0) return;
         setIsLoading(true);
+
+        // Optimistic UI: Reset form and mutate list
+        const backupComentario = comentario;
+        setComentario("");
+        setFiles([]);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+
         try {
             const attachmentIds: string[] = [];
             for (const f of files) {
@@ -46,17 +56,16 @@ export default function TicketActions({ ticketId, role, userId, currentStatus, c
                 attachmentIds.push(att.id);
             }
 
-            await addComment(ticketId, comentario, isInterno, attachmentIds, isSolucao);
-
-            setComentario("");
+            await addComment(ticketId, backupComentario, isInterno, attachmentIds, isSolucao);
+            
+            // Trigger refresh
+            mutate(`/api/tickets/${ticketId}/comments`);
+            
             setIsInterno(false);
             setIsSolucao(false);
-            setFiles([]);
-            if (fileInputRef.current) {
-                fileInputRef.current.value = "";
-            }
         } catch (error) {
             alert("Erro ao enviar comentário ou arquivos.");
+            setComentario(backupComentario); // Rollback text on failure
         } finally {
             setIsLoading(false);
         }

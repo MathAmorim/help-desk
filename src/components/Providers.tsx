@@ -14,7 +14,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <ThemeProvider
                 attribute="class"
                 defaultTheme="system"
-                enableSystem
+                enableSystem={false} // Evita injeção de script que causa erro no React 19
                 disableTransitionOnChange
                 forcedTheme={forceLight ? "light" : undefined}
             >

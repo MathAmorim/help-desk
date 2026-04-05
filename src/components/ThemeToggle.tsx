@@ -9,7 +9,12 @@ import { updateTheme as updateThemeAction } from "@/app/actions/profile";
 
 export function ThemeToggle() {
     const { theme, setTheme } = useTheme();
-    const { data: session, update } = useSession();
+    const sessionContext = useSession();
+    
+    // Fallback caso o provider falhe na hidratação
+    const session = sessionContext?.data;
+    const update = sessionContext?.update;
+
     const [mounted, setMounted] = React.useState(false);
 
     React.useEffect(() => {
