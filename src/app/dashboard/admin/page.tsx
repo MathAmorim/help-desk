@@ -12,10 +12,16 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Users, UserMinus } from "lucide-react";
 
-export default async function AdminUsersPage({ searchParams }: { searchParams: Promise<{ showInactive?: string }> }) {
+import UserFilters from "./UserFilters";
+import SortButton from "./SortButton";
+
+export default async function AdminUsersPage({ searchParams }: { searchParams: Promise<{ showInactive?: string; q?: string; sortBy?: string; order?: string }> }) {
     const session = await getServerSession(authOptions);
     const resolvedParams = await searchParams;
     const showInactive = resolvedParams.showInactive === "true";
+    const q = resolvedParams.q || "";
+    const sortBy = resolvedParams.sortBy || "name";
+    const order = (resolvedParams.order === "desc" ? "desc" : "asc") as "asc" | "desc";
 
     if (!session || session.user.role !== "ADMIN") {
         return (
@@ -37,14 +43,29 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
         .filter((s: any) => s && s.trim().length > 0)
         .sort() as string[];
 
-    const where: any = {};
+    const where: any = {
+        AND: []
+    };
+
     if (!showInactive) {
-        where.ativo = true;
+        where.AND.push({ ativo: true });
+    }
+
+    if (q) {
+        where.AND.push({
+            OR: [
+                { name: { contains: q } },
+                { email: { contains: q } },
+                { funcao: { contains: q } },
+                { setor: { contains: q } },
+                { cpf: { contains: q } }
+            ]
+        });
     }
 
     const users = await prisma.user.findMany({
         where,
-        orderBy: { name: "asc" }
+        orderBy: { [sortBy]: order }
     });
 
     return (
@@ -91,16 +112,23 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
                         </Link>
                     </div>
                 </CardHeader>
+                <UserFilters />
                 <CardContent className="p-0">
                     <div className="overflow-x-auto">
                         <Table>
                             <TableHeader className="bg-slate-50 dark:bg-slate-900">
                                 <TableRow>
                                     <TableHead className="w-[80px]">ID</TableHead>
-                                    <TableHead>Nome / Função</TableHead>
+                                    <TableHead>
+                                        <SortButton column="name" label="Nome / Função" />
+                                    </TableHead>
                                     <TableHead>Email / Setor</TableHead>
-                                    <TableHead>Perfil / Status</TableHead>
-                                    <TableHead>Cadastro em</TableHead>
+                                    <TableHead>
+                                        <SortButton column="role" label="Perfil / Status" />
+                                    </TableHead>
+                                    <TableHead>
+                                        <SortButton column="createdAt" label="Cadastro em" />
+                                    </TableHead>
                                     <TableHead className="text-right">Ação</TableHead>
                                 </TableRow>
                             </TableHeader>
