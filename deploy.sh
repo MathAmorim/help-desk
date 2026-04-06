@@ -1,7 +1,7 @@
 #!/bin/bash
 # Help Desk - Enterprise Deployment & Update Script for Debian/Ubuntu
 # Refactored for robust error handling, idempotency, and strict security.
-
+clear
 set -euo pipefail
 
 # ==========================================
@@ -263,10 +263,37 @@ npm install --silent
 log_info "Executando Correção Heurística de Vulnerabilidades (Audit Fix Force)"
 npm audit fix --force > /dev/null 2>&1 || true
 
-log_info "Propagando DB Schemas (Prisma Migrate)"
+log_info "Sincronizando DB Schemas (Prisma Engine)"
+# Detecção de Conflito de Provedor (P3019)
+LOCK_FILE="prisma/migrations/migration_lock.toml"
+if [ -f "$LOCK_FILE" ]; then
+    # Extrai o provedor atual do lock file
+    STORED_PROVIDER=$(grep "provider =" "$LOCK_FILE" | cut -d '"' -f 2 || echo "")
+    if [ -n "$STORED_PROVIDER" ] && [ "$STORED_PROVIDER" != "$PROVIDER" ]; then
+        log_warn "Conflito de Provedor Detectado: $STORED_PROVIDER -> $PROVIDER"
+        log_warn "Limpando histórico de migrações incompatível para evitar erro P3019..."
+        rm -rf prisma/migrations
+    fi
+fi
+
 npx prisma generate
-npx prisma migrate deploy
-npx prisma db push --accept-data-loss # Mantendo como fallback caso migrações falhem em ambientes SQLite puristas
+# Tenta migração padrão. Se falhar por incompatibilidade de histórico, usa db push.
+if ! npx prisma migrate deploy --quiet 2>/dev/null; then
+    log_warn "O Histórico de migrações está em conflito ou incompleto."
+    echo -e "${C_RED}${C_BOLD}⚠️  ALERTA DE SEGURANÇA DE DADOS:${C_RESET}"
+    echo -e "O Prisma não consegue sincronizar o banco via migration convencional."
+    echo -e "Deseja forçar a sincronização via 'DB PUSH'? ${C_YELLOW}(Isso pode apagar colunas removidas/renomeadas)${C_RESET}"
+    read -p "Confirmar Sincronização Forçada (y/n)? " CONFIRM_PUSH
+    if [[ "$CONFIRM_PUSH" == "y" || "$CONFIRM_PUSH" == "Y" ]]; then
+        log_info "Forçando sincronização via DB Push (Accept Data Loss)..."
+        npx prisma db push --accept-data-loss
+    else
+        log_error "Operação abortada pelo usuário para proteger a integridade dos dados."
+        exit 1
+    fi
+else
+    log_success "Migração por histórico aplicada com sucesso."
+fi
 
 # ==========================================
 # 7. SEEDING DE BASE DE DADOS
