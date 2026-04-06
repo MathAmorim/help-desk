@@ -132,8 +132,13 @@ export async function getMyTickets(filters?: TicketFilters) {
 
     let sla = undefined;
     if (filters?.atrasado) {
-        // @ts-ignore
-        sla = await prisma.setting.findUnique({ where: { id: "global" } });
+        const settings = await prisma.setting.findUnique({ where: { id: "global" } });
+        if (settings) {
+            sla = {
+                tempoMaximoAssuncao: settings.tempoMaximoAssuncao,
+                tempoMaximoConclusao: settings.tempoMaximoConclusao,
+            };
+        }
     }
 
     const where = buildWhereClause({ solicitanteId: session.user.id }, filters, sla);
@@ -162,8 +167,13 @@ export async function getAllTickets(filters?: TicketFilters) {
 
     let sla = undefined;
     if (filters?.atrasado) {
-        // @ts-ignore
-        sla = await prisma.setting.findUnique({ where: { id: "global" } });
+        const settings = await prisma.setting.findUnique({ where: { id: "global" } });
+        if (settings) {
+            sla = {
+                tempoMaximoAssuncao: settings.tempoMaximoAssuncao,
+                tempoMaximoConclusao: settings.tempoMaximoConclusao,
+            };
+        }
     }
 
     const where = buildWhereClause({}, filters, sla);
