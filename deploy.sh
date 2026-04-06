@@ -39,17 +39,21 @@ echo -e "${C_BOLD}🚀 Plataforma Help Desk - Instalador${C_RESET}"
 echo -e "${C_BOLD}${C_BLUE}======================================================${C_RESET}"
 
 IS_UPDATE=false
+IS_FACTORY_RESET=false
 if [ -f "$ENV_PATH" ]; then
     log_success "Instalação prévia detectada em $APP_DIR"
     echo -e "Escolha o modo de operação:"
     echo -e "  1) ${C_BOLD}Update Seguro${C_RESET} (Mantém dados, recompila código e patches de segurança)"
-    echo -e "  2) ${C_BOLD}Reinstalação Forçada${C_RESET} (Atenção: Sobrescreve env/credentials)"
-    echo -e "  3) ${C_BOLD}Disaster Recovery${C_RESET} (Restaurar Backup sobre instalação atual)"
+    echo -e "  2) ${C_BOLD}Reinstalação Forçada (Reset de Fábrica)${C_RESET} (Atenção: Limpa TUDO e reinstala do zero)"
+    echo -e "  3) ${C_BOLD}Restaurar Backup (Disaster Recovery)${C_RESET} (Sobre instalação atual)"
     read -p "Sua Opção (1, 2 ou 3): " DEPLOY_MODE
     
     if [[ "$DEPLOY_MODE" == "1" ]]; then
         IS_UPDATE=true
         log_info "Modo de Atualização Ativado. Configurações de BD e admin serão retidas."
+    elif [[ "$DEPLOY_MODE" == "2" ]]; then
+        IS_FACTORY_RESET=true
+        log_warn "MODO RESET DE FÁBRICA ATIVADO. Limpeza profunda em andamento..."
     elif [[ "$DEPLOY_MODE" == "3" ]]; then
         IS_DR=true
         log_warn "Modo Disaster Recovery Ativado."
@@ -58,7 +62,7 @@ else
     log_warn "Nenhuma instalação prévia detectada (Máquina Virgem)."
     echo -e "Escolha como deseja iniciar o sistema:"
     echo -e "  1) ${C_BOLD}Nova Instalação Limpa${C_RESET}"
-    echo -e "  2) ${C_BOLD}Instalação via Restauração de Backup${C_RESET} (Importar dados legados)"
+    echo -e "  2) ${C_BOLD}Importar Backup (Disaster Recovery)${C_RESET} (Novo servidor + Dados legados)"
     read -p "Sua Opção (1 ou 2): " NEW_MACHINE_MODE
 
     if [[ "$NEW_MACHINE_MODE" == "2" ]]; then
@@ -170,11 +174,22 @@ log_header "[2/8] Sincronização Restrita de Repositório"
 git config --global --add safe.directory "$APP_DIR" || true
 
 if [ -d "$APP_DIR" ]; then
-    log_info "Repositório existente. Baixando HEAD master e forçando convergência..."
+    log_info "Repositório existente detectado."
     cd "$APP_DIR"
-    git fetch --all --quiet
-    git reset --hard @{u} --quiet
-    git clean -fd -e .env -e public/uploads -e private_uploads --quiet
+    
+    if [ "$IS_FACTORY_RESET" = true ]; then
+        log_header "Executando Reset de Fábrica (Deep Clean)"
+        # Remove TUDO que não está no controle do Git, exceto backups e uploads (por segurança extrema)
+        git clean -fdx -e backups -e private_uploads -e public/uploads || true
+        git fetch --all --quiet
+        git reset --hard @{u} --quiet
+        log_success "FileSystem limpo e código resetado para a versão mais recente."
+    else
+        log_info "Sincronizando código (Update)..."
+        git fetch --all --quiet
+        git reset --hard @{u} --quiet
+        git clean -fd -e .env -e public/uploads -e private_uploads --quiet
+    fi
 else
     log_info "Clonando matriz principal em $APP_DIR..."
     git clone --quiet "$GIT_URL" "$APP_DIR"
