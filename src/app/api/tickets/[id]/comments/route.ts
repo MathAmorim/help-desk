@@ -34,6 +34,11 @@ export async function GET(
             return NextResponse.json({ error: "Ticket não encontrado" }, { status: 404 });
         }
 
+        // Hardening: Proteção contra IDOR na API
+        if (session.user.role === "USUARIO" && ticket.solicitanteId !== session.user.id) {
+            return NextResponse.json({ error: "Acesso negado: Este chamado pertence a outro usuário." }, { status: 403 });
+        }
+
         // Filtra notas internas para usuários comuns
         const filteredComments = ticket.comments.filter(c => {
             if (!c.isInterno) return true;

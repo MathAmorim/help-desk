@@ -262,6 +262,11 @@ export async function addComment(ticketId: string, texto: string, isInterno: boo
         });
 
         if (!ticketState) throw new Error("Chamado não encontrado");
+        
+        // Hardening: Verifica se o usuário tem permissão para comentar neste ticket (IDOR Protection)
+        if (session.user.role === "USUARIO" && ticketState.solicitanteId !== session.user.id) {
+            throw new Error("Acesso negado: Você só pode interagir com seus próprios chamados.");
+        }
 
         // Guard: Ticket Morto. Ninguém pode comentar se estiver "FECHADO" (Terminado Permanente)
         if (ticketState.status === "FECHADO") {
