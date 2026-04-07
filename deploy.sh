@@ -449,14 +449,9 @@ if [ ! -f "/etc/nginx/sites-available/help-desk" ]; then
     log_info "Emitindo Virtual Host Virgem com IP Passthrough"
     cat <<EOF > /etc/nginx/sites-available/help-desk
 server {
-    listen 80 proxy_protocol default_server;
-    listen [::]:80 proxy_protocol default_server;
+    listen 80 default_server;
+    listen [::]:80 default_server;
     server_name ${APP_DOMAIN:-_};
-
-    # Configuração de IP Real (Proxy Protocol v2)
-    real_ip_header proxy_protocol;
-    set_real_ip_from 0.0.0.0/0;
-    real_ip_recursive on;
 
     # Hardening Básico: Esconde a versão do SO/Nginx
     server_tokens off;
