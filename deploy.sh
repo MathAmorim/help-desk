@@ -449,16 +449,21 @@ if [ ! -f "/etc/nginx/sites-available/help-desk" ]; then
     log_info "Emitindo Virtual Host Virgem com IP Passthrough"
     cat <<EOF > /etc/nginx/sites-available/help-desk
 server {
-    listen 80;
+    listen 80 default_server;
+    listen [::]:80 default_server;
     server_name ${APP_DOMAIN:-_};
 
     # Hardening Básico: Esconde a versão do SO/Nginx
     server_tokens off;
 
     # Aumenta buffers para evitar Erro 400 em cabeçalhos de autenticação/cookies grandes
-    proxy_buffer_size   128k;
-    proxy_buffers       4 256k;
+    # Configurações agressivas para compatibilidade com túneis (Playit.gg/Cloudflare)
+    client_header_buffer_size 128k;
+    large_client_header_buffers 8 128k;
+    proxy_buffer_size   256k;
+    proxy_buffers       8 256k;
     proxy_busy_buffers_size 256k;
+    underscores_in_headers on;
 
     location / {
         proxy_pass http://127.0.0.1:3000;
