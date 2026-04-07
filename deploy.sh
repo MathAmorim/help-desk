@@ -275,6 +275,18 @@ chmod 755 public/uploads private_uploads
 log_info "Instalando Árvore NPM"
 npm install --silent
 
+log_info "Instalando Driver Nativo de Banco (para scripts de manutenção)"
+if [ "$PROVIDER" == "postgresql" ]; then
+    npm install pg --save --silent
+    log_success "Driver PostgreSQL (pg) instalado."
+elif [ "$PROVIDER" == "mysql" ]; then
+    npm install mysql2 --save --silent
+    log_success "Driver MySQL (mysql2) instalado."
+elif [ "$PROVIDER" == "sqlite" ]; then
+    npm install better-sqlite3 --save --silent
+    log_success "Driver SQLite (better-sqlite3) instalado."
+fi
+
 log_info "Executando Correção Heurística de Vulnerabilidades (Audit Fix Force)"
 npm audit fix --force > /dev/null 2>&1 || true
 

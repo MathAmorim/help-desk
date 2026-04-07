@@ -20,14 +20,17 @@ export async function getAuditLogs(params: {
     }
 
     const { 
-        page = 1, 
-        limit = 50, 
+        page: rawPage = 1, 
+        limit: rawLimit = 50, 
         userId, 
         acao, 
         startDate, 
         endDate 
     } = params;
 
+    // Limites de segurança para evitar queries excessivas (DoS)
+    const page = Math.max(1, Math.min(rawPage, 10000));
+    const limit = Math.max(1, Math.min(rawLimit, 100));
     const skip = (page - 1) * limit;
 
     // 2. Construção dinâmica do filtro

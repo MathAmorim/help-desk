@@ -73,10 +73,10 @@ export async function POST(req: Request) {
         }
 
         // 5. Log de Auditoria da Migração
-        await (prisma.auditLog as any).create({
+        await prisma.auditLog.create({
             data: {
                 acao: "DATABASE_MIGRATION",
-                detalhes: `Migração de busca insensível a acentos concluída. Usuários: ${stats.usersNormalized}. Tickets: ${stats.ticketsNormalized}.`
+                detalhes: `Migração concluída. Status: ${stats.statusUpdated}. Usuários: ${stats.usersNormalized}. Tickets: ${stats.ticketsNormalized}. Settings: ${stats.settingsCreated ? 'criado' : 'existente'}.`
             }
         });
 
@@ -87,6 +87,6 @@ export async function POST(req: Request) {
 
     } catch (error: any) {
         console.error("Erro na migração:", error);
-        return NextResponse.json({ error: "Erro interno na migração.", details: error.message }, { status: 500 });
+        return NextResponse.json({ error: "Erro interno na migração." }, { status: 500 });
     }
 }

@@ -1,10 +1,10 @@
 import fs from "fs";
 import path from "path";
 import archiver from "archiver";
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import { promisify } from "util";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 // Configurações
 const BACKUP_DIR = path.join(process.cwd(), "backups");
@@ -47,7 +47,7 @@ export async function runBackup() {
         if (fs.existsSync(dbAbsPath)) {
             // Tenta usar o comando .backup do sqlite3 se disponível para consistência total
             try {
-                await execAsync(`sqlite3 "${dbAbsPath}" ".backup '${dbBackupPath}'"`);
+                await execFileAsync("sqlite3", [dbAbsPath, `.backup '${dbBackupPath}'`]);
                 log("Snapshot do banco de dados (SQLite) criado com sucesso via CLI.");
             } catch (err) {
                 // Fallback para cópia direta se sqlite3 não estiver no PATH
