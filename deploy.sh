@@ -137,19 +137,46 @@ if [ "$IS_UPDATE" = false ]; then
         read -p "Gerar Cadeado SSL Automaticamente? (y/n): " AUTO_SSL
     fi
 
+    if [ "$IS_DR" = true ]; then
+        SSL_EMAIL="" # Inicializa vazio para DR
+    fi
+
     # APENAS solicita credenciais se NÃO for um Restore
     if [ "$IS_DR" = false ]; then
         log_header "Credenciais Administrativas (Raiz)"
-        read -p "Email do Administrador Inicial: " ADMIN_EMAIL
+        while true; do
+            read -p "Email do Administrador Inicial: " ADMIN_EMAIL
+            if [[ "$ADMIN_EMAIL" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+                break
+            else
+                log_error "Formato de e-mail inválido (Ex: admin@empresa.com.br). O Let's Encrypt exige um e-mail válido."
+            fi
+        done
         read -s -p "Senha Segura do Administrador: " ADMIN_PASS
         echo ""
     fi
 
     if [ -n "$APP_DOMAIN" ]; then
-        BASE_URL="https://$APP_DOMAIN"
+        # Começamos com http:// para evitar o erro 400 caso o SSL falhe no primeiro deploy
+        # O navegador redirecionará para https automaticamente via HSTS se o SSL for ativado
+        BASE_URL="http://$APP_DOMAIN"
     else
         PUBLIC_IP=$(curl -s ifconfig.me || echo "localhost")
         BASE_URL="http://$PUBLIC_IP"
+    fi
+
+    if [[ -n "$APP_DOMAIN" && ("$AUTO_SSL" == "y" || "$AUTO_SSL" == "Y") ]]; then
+        log_info "Coletando dados para Certificado SSL"
+        while true; do
+            read -p "Email para alertas de expiração do SSL [Padrão: ${ADMIN_EMAIL:-admin@empresa.com}]: " SSL_EMAIL
+            SSL_EMAIL=${SSL_EMAIL:-${ADMIN_EMAIL:-"admin@empresa.com"}}
+            
+            if [[ "$SSL_EMAIL" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+                break
+            else
+                log_error "Formato de e-mail inválido para o SSL. O Let's Encrypt exige um e-mail válido para alertas."
+            fi
+        done
     fi
 fi
 
@@ -209,7 +236,8 @@ if [ "$IS_UPDATE" = false ]; then
         sudo -u postgres psql -c "CREATE DATABASE helpdesk;" > /dev/null 2>&1 || true
         sudo -u postgres psql -c "CREATE USER helpdeskuser WITH ENCRYPTED PASSWORD '$DB_PASS';" > /dev/null 2>&1 || true
         sudo -u postgres psql -c "ALTER USER helpdeskuser WITH PASSWORD '$DB_PASS';" > /dev/null 2>&1
-        sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE helpdesk TO helpdeskuser;" > /dev/null 2>&1
+        sudo -u postgres psql -c "ALTER DATABASE helpdesk OWNER TO helpdeskuser;" > /dev/null 2>&1
+        sudo -u postgres psql -d helpdesk -c "GRANT ALL ON SCHEMA public TO helpdeskuser;" > /dev/null 2>&1
         DB_URL="postgresql://helpdeskuser:$DB_PASS@localhost:5432/helpdesk?schema=public"
         PROVIDER="postgresql"
     elif [ "$DB_OPTION" == "2" ]; then
@@ -427,16 +455,22 @@ server {
     # Hardening Básico: Esconde a versão do SO/Nginx
     server_tokens off;
 
+    # Aumenta buffers para evitar Erro 400 em cabeçalhos de autenticação/cookies grandes
+    proxy_buffer_size   128k;
+    proxy_buffers       4 256k;
+    proxy_busy_buffers_size 256k;
+
     location / {
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
         proxy_set_header Host \$host;
-        # Encaminhamento Estrito de Identidade (Vital Anti-BruteForce)
+        # Identidade e Protocolo (Vital para NextAuth e Anti-BruteForce)
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Host \$host;
         proxy_cache_bypass \$http_upgrade;
     }
 }
@@ -457,8 +491,12 @@ if [[ -n "${APP_DOMAIN:-}" ]] && [[ "${AUTO_SSL:-}" == "y" || "${AUTO_SSL:-}" ==
     if ! command -v certbot &> /dev/null; then
         apt-get install -yqq certbot python3-certbot-nginx > /dev/null 2>&1
     fi
-    certbot --nginx -d "$APP_DOMAIN" --non-interactive --agree-tos -m "$ADMIN_EMAIL" || true
-    log_success "Certificado Assentado. TLS ativado."
+    if certbot --nginx -d "$APP_DOMAIN" --non-interactive --agree-tos -m "$SSL_EMAIL"; then
+        log_success "Certificado Assentado. TLS ativado."
+    else
+        log_error "Falha na geração do certificado SSL via Certbot com o e-mail $SSL_EMAIL."
+        log_warn "O sistema continuará operando via HTTP (Porta 80). Verifique os logs em /var/log/letsencrypt/."
+    fi
 elif [ -n "${APP_DOMAIN:-}" ]; then
     log_info "Auto-SSL abortado pelo usuário. Presumindo terminação SSL num Tier externo (pfSense, Cloudflare)."
 else

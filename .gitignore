@@ -67,8 +67,11 @@ Thumbs.db
 # Security
 /src/app/api/seed/
 # Disaster Recovery & Logs
+# Disaster Recovery & Logs
 /backups/
 /logs/
+/tmp/
+/scripts/intrusion-test.js
 /private_uploads/
 !/private_uploads/.gitkeep
 /public/uploads/

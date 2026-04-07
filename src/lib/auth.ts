@@ -138,14 +138,14 @@ export const authOptions: NextAuthOptions = {
     secret: process.env.NEXTAUTH_SECRET || "super_secret_for_development",
     cookies: {
         sessionToken: {
-            name: process.env.NODE_ENV === "production"
+            name: process.env.NODE_ENV === "production" && (process.env.NEXTAUTH_URL?.startsWith("https://"))
                 ? "__Secure-next-auth.session-token"
                 : "next-auth.session-token",
             options: {
                 httpOnly: true,
                 sameSite: "lax" as const,
                 path: "/",
-                secure: process.env.NODE_ENV === "production",
+                secure: process.env.NODE_ENV === "production" && (process.env.NEXTAUTH_URL?.startsWith("https://")),
             },
         },
     },
