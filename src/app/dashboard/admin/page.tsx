@@ -82,6 +82,11 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
                             SLA
                         </Button>
                     </Link>
+                    <Link href="/dashboard/admin/auditoria">
+                        <Button variant="outline" className="h-10 text-rose-600 dark:text-rose-500 border-rose-200 dark:border-rose-900 bg-rose-50/50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm">
+                            Auditoria
+                        </Button>
+                    </Link>
                     <Link href="/dashboard/admin/setores">
                         <Button variant="outline" className="h-10 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900 bg-indigo-50/50 dark:bg-indigo-950/20 hover:bg-indigo-100 dark:hover:bg-indigo-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm">
                             Gerenciar Setores

@@ -12,6 +12,7 @@ const RESET = "\x1b[0m";
 
 const ENV_PATH = path.join(process.cwd(), ".env");
 const BACKUP_ZIP = process.argv[2];
+const TEMP_RESTORE = path.join(process.cwd(), "temp_restore");
 
 if (!BACKUP_ZIP) {
     console.error(`${RED}Erro: Você deve fornecer o caminho do arquivo .zip como argumento.${RESET}`);
@@ -19,138 +20,137 @@ if (!BACKUP_ZIP) {
     process.exit(1);
 }
 
-const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
-
-const TEMP_RESTORE = path.join(process.cwd(), "temp_restore");
-
-const IS_FORCE = process.argv.includes("--force");
-
-/**
- * Lógica de Restauração
- */
-async function startRestore() {
-    console.clear();
-    console.log(`${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-    console.log(`⚠️  ATENÇÃO: PROCEDIMENTO DE RESTAURAÇÃO DE DESASTRES (DR)`);
-    console.log(`Esta ação vai SOBRESCREVER o banco de dados atual e os arquivos de upload.`);
-    console.log(`Arquivo alvo: ${BACKUP_ZIP}`);
-    console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}`);
-    
-    if (IS_FORCE) {
-        console.log(`${YELLOW}Modo --force detectado. Iniciando restauração automática...${RESET}`);
-        await executeRestoreLogic();
-        process.exit(0);
-    } else {
-        rl.question(`Digite ${RED}CONFIRMAR${RESET} para continuar ou qualquer outra tecla para abortar: `, async (answer) => {
-            if (answer !== "CONFIRMAR") {
-                console.log(`${YELLOW}Restauração cancelada pelo usuário.${RESET}`);
-                process.exit(0);
-            }
-            await executeRestoreLogic();
-            rl.close();
-            process.exit(0);
-        });
+function updateMaintenanceMode(enabled: boolean) {
+    if (!fs.existsSync(ENV_PATH)) return;
+    try {
+        let content = fs.readFileSync(ENV_PATH, "utf8");
+        const key = "NEXT_PUBLIC_MAINTENANCE_MODE";
+        const value = enabled ? "true" : "false";
+        if (content.includes(key)) {
+            content = content.replace(new RegExp(`${key}=.*`), `${key}=${value}`);
+        } else {
+            content += `\n${key}=${value}\n`;
+        }
+        fs.writeFileSync(ENV_PATH, content);
+    } catch (e) {
+        // Silencioso se falhar no fim
     }
 }
 
 async function executeRestoreLogic() {
     try {
-        // 1. Ativar Modo de Manutenção (Alterando .env)
+        // 1. Modo de Manutenção
+        console.log(`${YELLOW}[1/6] Ativando Modo de Manutenção...${RESET}`);
         updateMaintenanceMode(true);
-        console.log(`${YELLOW}[1/4] Modo de manutenção ATIVADO. Aguardando servidor reiniciar...${RESET}`);
-
+        
+        console.log(`${YELLOW}Aguardando 30 segundos para o servidor estabilizar...${RESET}`);
+        for (let i = 30; i > 0; i--) {
+            process.stdout.write(`\rReiniciando em ${i}s... `);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        console.log(`\n${GREEN}Pronto! Iniciando restauração...${RESET}`);
+        
         // 2. Extração
-        console.log(`${YELLOW}[2/4] Descompactando arquivo de backup...${RESET}`);
-        if (fs.existsSync(TEMP_RESTORE)) fs.rmSync(TEMP_RESTORE, { recursive: true });
+        console.log(`${YELLOW}[2/6] Descompactando backup...${RESET}`);
+        if (!fs.existsSync(BACKUP_ZIP)) throw new Error("Arquivo ZIP não encontrado.");
+        if (fs.existsSync(TEMP_RESTORE)) fs.rmSync(TEMP_RESTORE, { recursive: true, force: true });
         
         const zip = new AdmZip(BACKUP_ZIP);
         zip.extractAllTo(TEMP_RESTORE, true);
 
-        // 3. Restaurar Uploads
-        console.log(`${YELLOW}[3/4] Restaurando arquivos de anexos (uploads)...${RESET}`);
+        // 3. Uploads
+        console.log(`${YELLOW}[3/6] Restaurando anexos...${RESET}`);
         const UPLOADS_DIR = path.join(process.cwd(), "private_uploads");
         const TEMP_UPLOADS = path.join(TEMP_RESTORE, "uploads");
-
         if (fs.existsSync(TEMP_UPLOADS)) {
-            if (fs.existsSync(UPLOADS_DIR)) fs.rmSync(UPLOADS_DIR, { recursive: true });
-            fs.renameSync(TEMP_UPLOADS, UPLOADS_DIR);
+            if (fs.existsSync(UPLOADS_DIR)) fs.rmSync(UPLOADS_DIR, { recursive: true, force: true });
+            fs.cpSync(TEMP_UPLOADS, UPLOADS_DIR, { recursive: true });
         }
 
-        // 4. Restaurar Banco de Dados
-        console.log(`${YELLOW}[4/4] Restaurando banco de dados...${RESET}`);
-        const dbUrl = process.env.DATABASE_URL || "file:./dev.db";
+        // 4. Banco de Dados
+        console.log(`${YELLOW}[4/6] Restaurando Banco de Dados...${RESET}`);
+        const dbUrl = process.env.DATABASE_URL || "file:./prisma/dev.db";
         
-        // Se SQLite
-        if (dbUrl.includes("file:")) {
-            const dbPath = dbUrl.replace("file:", "");
-            const dbAbsPath = path.isAbsolute(dbPath) ? dbPath : path.join(process.cwd(), dbPath);
-            const TEMP_DB_FILE = path.join(TEMP_RESTORE, "database.sqlite");
-
-            if (fs.existsSync(TEMP_DB_FILE)) {
-                // Garantir que a pasta do DB exista
-                if (!fs.existsSync(path.dirname(dbAbsPath))) fs.mkdirSync(path.dirname(dbAbsPath), { recursive: true });
-                fs.copyFileSync(TEMP_DB_FILE, dbAbsPath);
-                console.log(`${GREEN}Banco de Dados SQLite restaurado com sucesso.${RESET}`);
+        if (dbUrl.includes("postgresql://") || dbUrl.includes("postgres://")) {
+            const sqlFile = path.join(TEMP_RESTORE, "database.sql");
+            if (fs.existsSync(sqlFile)) {
+                execSync(`psql "${dbUrl}" < "${sqlFile}"`, { stdio: "inherit" });
+                console.log(`${GREEN}PostgreSQL restaurado.${RESET}`);
+            }
+        } else if (dbUrl.includes("mysql://")) {
+            const sqlFile = path.join(TEMP_RESTORE, "database.sql");
+            if (fs.existsSync(sqlFile)) {
+                execSync(`mysql "${dbUrl}" < "${sqlFile}"`, { stdio: "inherit" });
+                console.log(`${GREEN}MySQL restaurado.${RESET}`);
             }
         } else {
-            console.log(`${YELLOW}Aviso: O sistema não está usando SQLite. Lógica de psql necessária.${RESET}`);
-        }
-
-        // 5. Restaurar .env
-        console.log(`${YELLOW}[5/5] Restaurando arquivo de configuração (.env)...${RESET}`);
-        const TEMP_ENV = path.join(TEMP_RESTORE, ".env");
-        if (fs.existsSync(TEMP_ENV)) {
-            fs.copyFileSync(TEMP_ENV, ENV_PATH);
-            console.log(`${GREEN}Arquivo .env restaurado.${RESET}`);
-        }
-
-        // 6. Restaurar SSL (Local detectado ou padrão)
-        const TEMP_SSL = path.join(TEMP_RESTORE, "ssl");
-        const SSL_DEST = process.platform === "linux" ? "/etc/letsencrypt" : "C:/certbot";
-        if (fs.existsSync(TEMP_SSL)) {
-            console.log(`${YELLOW}[EXTRA] Restaurando certificados SSL em ${SSL_DEST}...${RESET}`);
-            try {
-                if (!fs.existsSync(path.dirname(SSL_DEST))) fs.mkdirSync(path.dirname(SSL_DEST), { recursive: true });
-                fs.cpSync(TEMP_SSL, SSL_DEST, { recursive: true, force: true });
-                console.log(`${GREEN}Certificados SSL restaurados com sucesso.${RESET}`);
-            } catch (err: any) {
-                console.error(`${RED}Erro ao restaurar SSL (provavelmente falta de permissão): ${err.message}${RESET}`);
+            // SQLite
+            const dbPath = dbUrl.replace("file:", "");
+            let dbAbsPath = path.isAbsolute(dbPath) ? dbPath : path.join(process.cwd(), dbPath);
+            if (!fs.existsSync(path.dirname(dbAbsPath))) {
+                const altPath = path.join(process.cwd(), "prisma", path.basename(dbPath));
+                if (fs.existsSync(path.dirname(altPath))) dbAbsPath = altPath;
+                else fs.mkdirSync(path.dirname(dbAbsPath), { recursive: true });
+            }
+            const tempDbFile = path.join(TEMP_RESTORE, "database.sqlite");
+            if (fs.existsSync(tempDbFile)) {
+                fs.copyFileSync(tempDbFile, dbAbsPath);
+                console.log(`${GREEN}SQLite restaurado.${RESET}`);
             }
         }
 
-        // Limpeza Final
-        updateMaintenanceMode(false);
-        if (fs.existsSync(TEMP_RESTORE)) fs.rmSync(TEMP_RESTORE, { recursive: true });
+        // 5. Configurações (.env)
+        console.log(`${YELLOW}[5/6] Restaurando configurações...${RESET}`);
+        const tempEnv = path.join(TEMP_RESTORE, ".env");
+        if (fs.existsSync(tempEnv)) {
+            fs.copyFileSync(tempEnv, ENV_PATH);
+        }
 
-        console.log(`\n${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-        console.log(`✅ Sistema restaurado com sucesso a partir do backup:`);
-        console.log(`${path.basename(BACKUP_ZIP)}`);
-        console.log(`O modo de manutenção foi DESATIVADO.`);
-        console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}\n`);
+        // 6. SSL
+        console.log(`${YELLOW}[6/6] Restaurando certificados SSL (se aplicável)...${RESET}`);
+        const tempSsl = path.join(TEMP_RESTORE, "ssl");
+        if (fs.existsSync(tempSsl)) {
+            const sslDest = process.platform === "linux" ? "/etc/letsencrypt" : "C:/certbot";
+            try {
+                if (!fs.existsSync(path.dirname(sslDest))) fs.mkdirSync(path.dirname(sslDest), { recursive: true });
+                fs.cpSync(tempSsl, sslDest, { recursive: true });
+                console.log(`${GREEN}SSL restaurado.${RESET}`);
+            } catch (e) {
+                console.warn(`${YELLOW}Aviso: Não foi possível restaurar SSL (permissão?).${RESET}`);
+            }
+        }
+
+        // Finalização
+        updateMaintenanceMode(false);
+        if (fs.existsSync(TEMP_RESTORE)) fs.rmSync(TEMP_RESTORE, { recursive: true, force: true });
+        console.log(`\n${GREEN}✅ RESTAURAÇÃO COMPLETADA COM SUCESSO!${RESET}\n`);
+        process.exit(0);
 
     } catch (err: any) {
-        console.error(`${RED}Erro fatal durante a restauração: ${err.message}${RESET}`);
+        console.error(`\n${RED}❌ ERRO FATAL: ${err.message}${RESET}`);
         updateMaintenanceMode(false);
+        if (fs.existsSync(TEMP_RESTORE)) fs.rmSync(TEMP_RESTORE, { recursive: true, force: true });
+        process.exit(1);
     }
 }
 
-function updateMaintenanceMode(enabled: boolean) {
-    if (!fs.existsSync(ENV_PATH)) return;
-
-    let envContent = fs.readFileSync(ENV_PATH, "utf8");
-    const key = "NEXT_PUBLIC_MAINTENANCE_MODE";
-    const value = enabled ? "true" : "false";
-
-    if (envContent.includes(key)) {
-        envContent = envContent.replace(new RegExp(`${key}=.*`), `${key}=${value}`);
-    } else {
-        envContent += `\n${key}=${value}\n`;
-    }
-
-    fs.writeFileSync(ENV_PATH, envContent);
+async function main() {
+    console.clear();
+    console.log(`${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    console.log(`⚠️  PROCEDIMENTO DE RECUPERAÇÃO DE DESASTRES (UNIVERSAL)`);
+    console.log(`Arquivo: ${BACKUP_ZIP}`);
+    console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}`);
+    
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    rl.question(`Digite ${RED}CONFIRMAR${RESET} para sobrescrever os dados atuais: `, async (answer) => {
+        rl.close();
+        if (answer === "CONFIRMAR") {
+            await executeRestoreLogic();
+        } else {
+            console.log(`${YELLOW}Operação cancelada.${RESET}`);
+            process.exit(0);
+        }
+    });
 }
 
-startRestore();
+main();

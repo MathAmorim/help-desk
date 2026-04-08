@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "restore": "tsx scripts/restore.ts"
+    "restore": "tsx scripts/restore.ts",
+    "backup": "tsx scripts/backup.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",

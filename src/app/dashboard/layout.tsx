@@ -40,9 +40,6 @@ export default async function DashboardLayout({
                                 <Link href="/dashboard/admin" className="px-3 py-1.5 text-sm font-semibold text-amber-600 dark:text-amber-500 hover:bg-amber-100/50 dark:hover:bg-amber-900/30 rounded-md transition-colors whitespace-nowrap">
                                     Painel Admin
                                 </Link>
-                                <Link href="/dashboard/admin/auditoria" className="px-3 py-1.5 text-sm font-semibold text-rose-600 dark:text-rose-500 hover:bg-rose-100/50 dark:hover:bg-rose-900/30 rounded-md transition-colors whitespace-nowrap">
-                                    Auditoria
-                                </Link>
                             </>
                         )}
                         {(session.user.role === "ADMIN" || session.user.role === "SUPORTE") && (

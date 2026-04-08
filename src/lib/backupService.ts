@@ -1,10 +1,10 @@
 import fs from "fs";
 import path from "path";
 import archiver from "archiver";
-import { execFile } from "child_process";
+import { exec } from "child_process";
 import { promisify } from "util";
 
-const execFileAsync = promisify(execFile);
+const execAsync = promisify(exec);
 
 // Configurações
 const BACKUP_DIR = path.join(process.cwd(), "backups");
@@ -27,7 +27,7 @@ function log(message: string, isError = false) {
  * Realiza o backup do Banco de Dados e Anexos
  */
 export async function runBackup() {
-    log("Iniciando processo de backup automatizado...");
+    log("Iniciando processo de backup automatizado (Universal DR)...");
     
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 16);
     const backupFileName = `backup-${timestamp}.zip`;
@@ -37,72 +37,95 @@ export async function runBackup() {
     if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
 
     try {
-        // 1. Backup do Banco de Dados (SQLite)
-        // Se fosse PostgreSQL, usaríamos pg_dump aqui.
-        // Para SQLite, faremos uma cópia segura ou dump via CLI se disponível.
-        const dbPath = process.env.DATABASE_URL?.replace("file:", "") || "./dev.db";
-        const dbAbsPath = path.isAbsolute(dbPath) ? dbPath : path.join(process.cwd(), dbPath);
-        const dbBackupPath = path.join(tempDir, "database.sqlite.bak");
+        const dbUrl = process.env.DATABASE_URL || "file:./dev.db";
+        let dbBackupFile = "";
 
-        if (fs.existsSync(dbAbsPath)) {
-            // Tenta usar o comando .backup do sqlite3 se disponível para consistência total
-            try {
-                await execFileAsync("sqlite3", [dbAbsPath, `.backup '${dbBackupPath}'`]);
-                log("Snapshot do banco de dados (SQLite) criado com sucesso via CLI.");
-            } catch (err) {
-                // Fallback para cópia direta se sqlite3 não estiver no PATH
-                fs.copyFileSync(dbAbsPath, dbBackupPath);
-                log("Cópia direta do banco de dados realizada (sqlite3 CLI não encontrado).");
+        // 1. Lógica Universal de Banco de Dados
+        if (dbUrl.startsWith("postgresql://") || dbUrl.startsWith("postgres://")) {
+            // PROGRESQL
+            dbBackupFile = path.join(tempDir, "database.sql");
+            log("Detectado PostgreSQL. Gerando dump...");
+            await execAsync(`pg_dump "${dbUrl}" > "${dbBackupFile}"`);
+            log("Dump PostgreSQL concluído.");
+        } 
+        else if (dbUrl.startsWith("mysql://")) {
+            // MYSQL
+            dbBackupFile = path.join(tempDir, "database.sql");
+            log("Detectado MySQL. Gerando dump...");
+            // Extrai parâmetros da URL para o mysqldump se necessário, ou usa a URL se o client suportar
+            // Aqui simplificamos esperando que o ambiente tenha as ferramentas configuradas
+            await execAsync(`mysqldump "${dbUrl}" > "${dbBackupFile}"`);
+            log("Dump MySQL concluído.");
+        }
+        else {
+            // SQLITE (Dev)
+            dbBackupFile = path.join(tempDir, "database.sqlite");
+            const dbPath = dbUrl.replace("file:", "");
+            
+            // Tenta localizar o banco (na raiz ou em /prisma)
+            let dbAbsPath = path.isAbsolute(dbPath) ? dbPath : path.join(process.cwd(), dbPath);
+            if (!fs.existsSync(dbAbsPath)) {
+                const altPath = path.join(process.cwd(), "prisma", path.basename(dbPath));
+                if (fs.existsSync(altPath)) dbAbsPath = altPath;
             }
-        } else {
-            log(`Arquivo de banco de dados não encontrado em: ${dbAbsPath}`, true);
+
+            if (fs.existsSync(dbAbsPath)) {
+                try {
+                    // Usa o comando .backup do sqlite3 (evita travas de arquivo no Windows)
+                    // Usamos aspas duplas para compatibilidade CLI Windows/Linux
+                    await execAsync(`sqlite3 "${dbAbsPath}" ".backup '${dbBackupFile}'"`);
+                    log("Snapshot SQLite criado via CLI.");
+                } catch (err) {
+                    fs.copyFileSync(dbAbsPath, dbBackupFile);
+                    log("Cópia direta do SQLite realizada (CLI falhou ou ausente).");
+                }
+            } else {
+                throw new Error(`Arquivo de banco de dados não localizado em: ${dbAbsPath}`);
+            }
         }
 
-        // 2. Preparar o Arquivo ZIP
+        // 2. Criar o Pacote ZIP
         const output = fs.createWriteStream(finalPath);
         const archive = archiver("zip", { zlib: { level: 9 } });
         archive.pipe(output);
 
-        // a. Adicionar o dump do BD
-        if (fs.existsSync(dbBackupPath)) {
-            archive.file(dbBackupPath, { name: "database.sqlite" });
+        // a. Adicionar o dump/arquivo do BD
+        if (fs.existsSync(dbBackupFile)) {
+            archive.file(dbBackupFile, { name: path.basename(dbBackupFile) });
         }
 
         // b. Adicionar a pasta de Uploads
         if (fs.existsSync(UPLOADS_DIR)) {
             archive.directory(UPLOADS_DIR, "uploads");
-            log(`Pasta de uploads (${UPLOADS_DIR}) adicionada ao pacote.`);
-        } else {
-            log("Pasta de uploads não encontrada ou vazia.", true);
+            log("Pasta de uploads adicionada.");
         }
 
-        // 3. Adicionar arquivo .env (Vital para DR)
+        // c. Adicionar .env
         const envPath = path.join(process.cwd(), ".env");
         if (fs.existsSync(envPath)) {
             archive.file(envPath, { name: ".env" });
-            log("Arquivo .env adicionado ao pacote.");
         }
 
-        // 4. Adicionar Certificados SSL (Locais padrão ou Mock de teste)
+        // d. Adicionar Certificados SSL (se existirem)
         const SSL_PATHS = ["/etc/letsencrypt", "C:/certbot", path.join(process.cwd(), "ssl_mock")];
-        for (const sslPath of SSL_PATHS) {
-            if (fs.existsSync(sslPath)) {
-                archive.directory(sslPath, "ssl");
-                log(`Pasta de certificados SSL encontrada em ${sslPath} e adicionada ao pacote.`);
+        for (const sPath of SSL_PATHS) {
+            if (fs.existsSync(sPath)) {
+                archive.directory(sPath, "ssl");
+                log(`SSL (${sPath}) incluído.`);
                 break;
             }
         }
 
         return new Promise((resolve, reject) => {
             output.on("close", () => {
-                log(`Backup finalizado com sucesso: ${backupFileName} (${archive.pointer()} bytes)`);
-                // Limpa o temporário
-                if (fs.existsSync(dbBackupPath)) fs.unlinkSync(dbBackupPath);
+                log(`Backup FINALIZADO: ${backupFileName} (${archive.pointer()} bytes)`);
+                // Limpeza
+                if (fs.existsSync(tempDir)) fs.rmSync(tempDir, { recursive: true });
                 resolve(true);
             });
 
             archive.on("error", (err) => {
-                log(`Erro no archive: ${err.message}`, true);
+                log(`Erro no ZIP: ${err.message}`, true);
                 reject(err);
             });
 
@@ -110,32 +133,29 @@ export async function runBackup() {
         });
 
     } catch (error: any) {
-        log(`Falha crítica no backup: ${error.message}`, true);
+        log(`Falha crítica: ${error.message}`, true);
+        if (fs.existsSync(tempDir)) fs.rmSync(tempDir, { recursive: true });
+        throw error;
     } finally {
-        // 3. Rotação (Deletar antigos)
         await rotateBackups();
     }
 }
 
-/**
- * Remove backups com mais de 7 dias
- */
 async function rotateBackups() {
-    log("Verificando retenção de backups antigos...");
+    log("Limpando backups antigos...");
+    if (!fs.existsSync(BACKUP_DIR)) return;
+    
     const files = fs.readdirSync(BACKUP_DIR);
     const now = Date.now();
     const msPerDay = 24 * 60 * 60 * 1000;
 
     for (const file of files) {
         if (!file.endsWith(".zip")) continue;
-
         const filePath = path.join(BACKUP_DIR, file);
         const stats = fs.statSync(filePath);
-        const ageInDays = (now - stats.mtimeMs) / msPerDay;
-
-        if (ageInDays > RETENTION_DAYS) {
+        if ((now - stats.mtimeMs) / msPerDay > RETENTION_DAYS) {
             fs.unlinkSync(filePath);
-            log(`Backup antigo removido por retenção (>7 dias): ${file}`);
+            log(`Removido por expiração: ${file}`);
         }
     }
 }

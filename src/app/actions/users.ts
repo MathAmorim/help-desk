@@ -234,3 +234,107 @@ export async function reactivateUser(userId: string) {
     revalidatePath("/dashboard/admin");
     return { success: true };
 }
+
+export async function exportUsersAction() {
+    const session = await getServerSession(authOptions);
+
+    if (!session || session.user.role !== "ADMIN") {
+        throw new Error("Não autorizado");
+    }
+
+    const users = await prisma.user.findMany({
+        select: {
+            name: true,
+            email: true,
+            role: true,
+            cpf: true,
+            funcao: true,
+            setor: true,
+            ativo: true,
+            createdAt: true
+        },
+        orderBy: { name: "asc" }
+    });
+
+    return { success: true, users };
+}
+
+export async function importUsersAction(usersData: any[]) {
+    const session = await getServerSession(authOptions);
+
+    if (!session || session.user.role !== "ADMIN") {
+        throw new Error("Não autorizado");
+    }
+
+    const results = {
+        successCount: 0,
+        skippedCount: 0,
+        tempCredentials: [] as { name: string; cpf: string; tempPassword: string }[],
+        skippedUsers: [] as { name: string; reason: string }[],
+    };
+
+    for (const data of usersData) {
+        try {
+            const { name, email, role, cpf, funcao, setor } = data;
+
+            // Limpa o CPF
+            const cleanedCpf = (cpf || "").toString().replace(/\D/g, '');
+
+            if (cleanedCpf.length !== 11) {
+                results.skippedCount++;
+                results.skippedUsers.push({ name: name || "Desconhecido", reason: "CPF Inválido" });
+                continue;
+            }
+
+            // Verifica se existe CPFs ou E-mail (se informado)
+            const existingUser = await prisma.user.findFirst({
+                where: {
+                    OR: [
+                        { cpf: cleanedCpf },
+                        ...(email ? [{ email }] : [])
+                    ]
+                },
+            });
+
+            if (existingUser) {
+                results.skippedCount++;
+                results.skippedUsers.push({ 
+                    name: name || cleanedCpf, 
+                    reason: `Já existe (CPF/Email duplicado)` 
+                });
+                continue;
+            }
+
+            const tempPassword = generateRandomPassword();
+            const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+            await (prisma.user as any).create({
+                data: {
+                    name,
+                    email: email || null,
+                    role: role || "USUARIO",
+                    cpf: cleanedCpf,
+                    funcao: funcao || null,
+                    setor: setor || null,
+                    password: hashedPassword,
+                    mustChangePassword: true,
+                    searchVector: normalizeSearchText(`${name} ${email || ""} ${cleanedCpf} ${setor || ""} ${funcao || ""}`)
+                },
+            });
+
+            results.successCount++;
+            results.tempCredentials.push({ name, cpf: cleanedCpf, tempPassword });
+
+        } catch (error: any) {
+            results.skippedCount++;
+            results.skippedUsers.push({ name: data.name || "Erro", reason: error.message });
+        }
+    }
+
+    revalidatePath("/dashboard/admin");
+
+    return {
+        success: true,
+        summary: results
+    };
+}

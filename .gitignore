@@ -1,4 +1,4 @@
-﻿# --- Dependências ---
+# --- Dependências ---
 /node_modules
 /.pnp
 .pnp.*
@@ -63,3 +63,13 @@ dr-test-output*.txt
 /src/app/api/seed/
 /scripts/intrusion-test.js
 *.pem
+
+# --- Arquivos Temporários e Debug ---
+yes.txt
+restore_debug.txt
+usuarios_export_*.json
+senhas_importacao_*.txt
+/tmp/
+/temp_restore/
+.antigravity/
+.gemini/
