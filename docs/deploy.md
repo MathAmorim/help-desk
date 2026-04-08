@@ -16,7 +16,7 @@ A plataforma foi projetada para rodar em servidores **Linux (Debian/Ubuntu)**. O
 ### Requisitos Mínimos
 - Servidor Linux (VPS ou Bare Metal).
 - Acesso Root ou `sudo`.
-- Conectividade de rede (Portas 80 e 443 abertas no firewall/pfSense).
+- Conectividade de rede (Portas 80 e 443 abertas no firewall).
 
 ---
 
