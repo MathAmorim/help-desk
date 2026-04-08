@@ -58,25 +58,17 @@ export async function runBackup() {
             log(`Arquivo de banco de dados não encontrado em: ${dbAbsPath}`, true);
         }
 
-        // 2. Criar o Arquivo ZIP
+        // 2. Preparar o Arquivo ZIP
         const output = fs.createWriteStream(finalPath);
         const archive = archiver("zip", { zlib: { level: 9 } });
-
-        output.on("close", () => {
-            log(`Backup finalizado com sucesso: ${backupFileName} (${archive.pointer()} bytes)`);
-            // Limpa o temporário
-            if (fs.existsSync(dbBackupPath)) fs.unlinkSync(dbBackupPath);
-        });
-
-        archive.on("error", (err) => { throw err; });
         archive.pipe(output);
 
-        // Adiciona o dump do BD
+        // a. Adicionar o dump do BD
         if (fs.existsSync(dbBackupPath)) {
             archive.file(dbBackupPath, { name: "database.sqlite" });
         }
 
-        // Adiciona a pasta de Uploads
+        // b. Adicionar a pasta de Uploads
         if (fs.existsSync(UPLOADS_DIR)) {
             archive.directory(UPLOADS_DIR, "uploads");
             log(`Pasta de uploads (${UPLOADS_DIR}) adicionada ao pacote.`);
@@ -84,13 +76,44 @@ export async function runBackup() {
             log("Pasta de uploads não encontrada ou vazia.", true);
         }
 
-        await archive.finalize();
+        // 3. Adicionar arquivo .env (Vital para DR)
+        const envPath = path.join(process.cwd(), ".env");
+        if (fs.existsSync(envPath)) {
+            archive.file(envPath, { name: ".env" });
+            log("Arquivo .env adicionado ao pacote.");
+        }
 
-        // 3. Rotação (Deletar antigos)
-        await rotateBackups();
+        // 4. Adicionar Certificados SSL (Locais padrão ou Mock de teste)
+        const SSL_PATHS = ["/etc/letsencrypt", "C:/certbot", path.join(process.cwd(), "ssl_mock")];
+        for (const sslPath of SSL_PATHS) {
+            if (fs.existsSync(sslPath)) {
+                archive.directory(sslPath, "ssl");
+                log(`Pasta de certificados SSL encontrada em ${sslPath} e adicionada ao pacote.`);
+                break;
+            }
+        }
+
+        return new Promise((resolve, reject) => {
+            output.on("close", () => {
+                log(`Backup finalizado com sucesso: ${backupFileName} (${archive.pointer()} bytes)`);
+                // Limpa o temporário
+                if (fs.existsSync(dbBackupPath)) fs.unlinkSync(dbBackupPath);
+                resolve(true);
+            });
+
+            archive.on("error", (err) => {
+                log(`Erro no archive: ${err.message}`, true);
+                reject(err);
+            });
+
+            archive.finalize();
+        });
 
     } catch (error: any) {
         log(`Falha crítica no backup: ${error.message}`, true);
+    } finally {
+        // 3. Rotação (Deletar antigos)
+        await rotateBackups();
     }
 }
 
