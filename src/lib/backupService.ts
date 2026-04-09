@@ -45,16 +45,30 @@ export async function runBackup() {
             // PROGRESQL
             dbBackupFile = path.join(tempDir, "database.sql");
             log("Detectado PostgreSQL. Gerando dump...");
-            await execAsync(`pg_dump "${dbUrl}" > "${dbBackupFile}"`);
+            
+            let pgUri = dbUrl;
+            try {
+                const url = new URL(dbUrl);
+                url.search = ""; // Remove parâmetros como ?schema=public que quebram o pg_dump
+                pgUri = url.toString();
+            } catch (e) {}
+
+            await execAsync(`pg_dump "${pgUri}" > "${dbBackupFile}"`);
             log("Dump PostgreSQL concluído.");
         } 
         else if (dbUrl.startsWith("mysql://")) {
             // MYSQL
             dbBackupFile = path.join(tempDir, "database.sql");
             log("Detectado MySQL. Gerando dump...");
-            // Extrai parâmetros da URL para o mysqldump se necessário, ou usa a URL se o client suportar
-            // Aqui simplificamos esperando que o ambiente tenha as ferramentas configuradas
-            await execAsync(`mysqldump "${dbUrl}" > "${dbBackupFile}"`);
+            
+            let mysqlUri = dbUrl;
+            try {
+                const url = new URL(dbUrl);
+                url.search = ""; 
+                mysqlUri = url.toString();
+            } catch (e) {}
+
+            await execAsync(`mysqldump "${mysqlUri}" > "${dbBackupFile}"`);
             log("Dump MySQL concluído.");
         }
         else {
