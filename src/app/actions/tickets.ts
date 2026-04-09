@@ -32,10 +32,14 @@ export async function createTicket(data: {
         where: { nome: data.categoria }
     });
     const prioridade = categoryRecord ? categoryRecord.prioridadePadrao : "BAIXA";
+    const tempoSLA = categoryRecord ? (categoryRecord as any).tempoResolucao : 72;
 
     if (data.titulo?.length > 150) throw new Error("Título não pode ter mais de 150 caracteres.");
     if (data.descricao?.length > 10000) throw new Error("Descrição excede 10.000 caracteres. Por favor, anexe um arquivo para logs muito extensos.");
     if (data.contatoOpcional && data.contatoOpcional.length > 150) throw new Error("Contato opcional excede 150 caracteres.");
+
+    const now = new Date();
+    const vencimentoSLA = new Date(now.getTime() + (tempoSLA * 60 * 60 * 1000));
 
     const cleanTitle = data.titulo.replace(/\0/g, "");
     const cleanDesc = data.descricao.replace(/\0/g, "");
@@ -50,12 +54,13 @@ export async function createTicket(data: {
             departamento: data.departamento,
             contatoOpcional: cleanContato,
             paraOutraPessoa: data.paraOutraPessoa,
+            vencimentoSLA,
             solicitanteId: session.user.id,
             searchVector: normalizeSearchText(`${cleanTitle} ${cleanDesc} ${data.departamento || ""} ${session.user.name || ""}`),
             attachments: data.attachmentIds && data.attachmentIds.length > 0 ? {
                 connect: data.attachmentIds.map(id => ({ id }))
             } : undefined
-        },
+        } as any,
     });
 
     await prisma.auditLog.create({
@@ -106,17 +111,9 @@ function buildWhereClause(baseWhere: any, filters?: TicketFilters, sla?: SLASett
 
     if (filters?.atrasado) {
         const now = new Date();
-        const tAssuncao = sla?.tempoMaximoAssuncao ?? 24;
-        const tConclusao = sla?.tempoMaximoConclusao ?? 72;
-
-        const assuncaoCutoff = new Date(now.getTime() - tAssuncao * 60 * 60 * 1000);
-        const conclusaoCutoff = new Date(now.getTime() - tConclusao * 60 * 60 * 1000);
-
         and.push({
-            OR: [
-                { status: "ABERTO", createdAt: { lt: assuncaoCutoff } },
-                { status: { in: ["EM_ANDAMENTO", "AGUARDANDO_USUARIO"] }, createdAt: { lt: conclusaoCutoff } }
-            ]
+            vencimentoSLA: { lt: now },
+            status: { notIn: ["RESOLVIDO", "FECHADO"] }
         });
     }
 
@@ -380,12 +377,21 @@ export async function updateTicketStatus(ticketId: string, status: string, respo
     if (!session || !session.user || session.user.role === "USUARIO") throw new Error("Não autorizado");
 
     const ticket = await prisma.$transaction(async (tx) => {
-        const check = await tx.ticket.findUnique({ where: { id: ticketId } });
+        const check = await tx.ticket.findUnique({ 
+            where: { id: ticketId },
+            include: { tecnicosSecundarios: { select: { id: true } } }
+        });
         if (!check) throw new Error("Chamado não encontrado");
 
-        // Guard: Ticket Fechado (Morto). Se está fechado, não pode mudar de status. Só pode criar chamados vinculados novos.
+        // Trava de Segurança: Se o chamado já tem um dono e quem tenta mudar NÃO é o dono nem apoio
+        const isAssigned = check.responsavelId === session.user.id || check.tecnicosSecundarios.some((t: any) => t.id === session.user.id);
+        if (check.responsavelId && !isAssigned) {
+            throw new Error("Ação Negada: Este chamado está sob responsabilidade de outro técnico.");
+        }
+
+        // Guard: Ticket Status Check
         if (check.status === "FECHADO") {
-            throw new Error("Transição Lógica Inválida: O ticket está arquivado e não pode sofrer mais alterações de estado.");
+            throw new Error("Transição Lógica Inválida: O ticket está arquivado.");
         }
 
         if (status === "RESOLVIDO" && check.status === "RESOLVIDO") {
@@ -393,12 +399,38 @@ export async function updateTicketStatus(ticketId: string, status: string, respo
         }
 
         let finalResponsavelId = responsavelId;
-        if (status === "RESOLVIDO" && !check.responsavelId && !responsavelId) {
+        if ((status === "RESOLVIDO" || status === "EM_ANDAMENTO") && !check.responsavelId && !responsavelId) {
             finalResponsavelId = session.user.id;
         }
 
         const updateData: any = { status };
         let detalhes = `Status alterado para ${status}.`;
+
+        const now = new Date();
+
+        // LOGICA DE PAUSA DE SLA
+        if (status === "AGUARDANDO_USUARIO") {
+            if (!check.responsavelId && !responsavelId) {
+                throw new Error("Não é possível colocar um chamado em pausa sem um técnico responsável. Por favor, assuma o atendimento primeiro.");
+            }
+        }
+
+        if (status === "AGUARDANDO_USUARIO" && check.status !== "AGUARDANDO_USUARIO") {
+            // Inicia pausa
+            updateData.ultimoPausa = now;
+        } else if (check.status === "AGUARDANDO_USUARIO" && status !== "AGUARDANDO_USUARIO") {
+            // Finaliza pausa e empurra o vencimentoSLA
+            if (check.ultimoPausa && check.vencimentoSLA) {
+                const pauseDurationMs = now.getTime() - new Date(check.ultimoPausa).getTime();
+                const newVencimento = new Date(new Date(check.vencimentoSLA).getTime() + pauseDurationMs);
+                const pauseMinutes = Math.floor(pauseDurationMs / 60000);
+                
+                updateData.vencimentoSLA = newVencimento;
+                updateData.totalPausado = (check.totalPausado || 0) + pauseMinutes;
+                updateData.ultimoPausa = null;
+                detalhes += ` (SLA compensado em ${pauseMinutes} min de espera)`;
+            }
+        }
 
         if (finalResponsavelId) {
             updateData.responsavelId = finalResponsavelId;
@@ -453,8 +485,18 @@ export async function updateTicketPriority(ticketId: string, prioridade: string)
     const session = await getServerSession(authOptions);
     if (!session || !session.user || session.user.role === "USUARIO") throw new Error("Não autorizado");
 
-    const check = await prisma.ticket.findUnique({ where: { id: ticketId } });
+    const check = await prisma.ticket.findUnique({ 
+        where: { id: ticketId },
+        include: { tecnicosSecundarios: { select: { id: true } } }
+    });
     if (!check) throw new Error("Chamado não encontrado");
+
+    // Trava de Segurança
+    const isAssigned = check.responsavelId === session.user.id || check.tecnicosSecundarios.some((t: any) => t.id === session.user.id);
+    if (check.responsavelId && !isAssigned) {
+        throw new Error("Acesso Negado: Você não é responsável por este chamado.");
+    }
+
     if (check.status === "RESOLVIDO" || check.status === "FECHADO") {
         throw new Error("Transição Lógica Inválida: Não é possível modificar a prioridade de um ticket concluído.");
     }
@@ -493,21 +535,44 @@ export async function updateTicketCategory(ticketId: string, categoria: string) 
     const session = await getServerSession(authOptions);
     if (!session || !session.user || session.user.role === "USUARIO") throw new Error("Não autorizado");
 
-    const check = await prisma.ticket.findUnique({ where: { id: ticketId } });
+    const check = await prisma.ticket.findUnique({ 
+        where: { id: ticketId },
+        include: { tecnicosSecundarios: { select: { id: true } } }
+    });
     if (!check) throw new Error("Chamado não encontrado");
+
+    // Trava de Segurança
+    const isAssigned = check.responsavelId === session.user.id || check.tecnicosSecundarios.some((t: any) => t.id === session.user.id);
+    if (check.responsavelId && !isAssigned) {
+        throw new Error("Acesso Negado: Você não é responsável por este chamado.");
+    }
+
     if (check.status === "RESOLVIDO" || check.status === "FECHADO") {
         throw new Error("Transição Lógica Inválida: Não é possível modificar a categoria de um ticket concluído.");
     }
 
+    const oldCategory = await prisma.category.findUnique({ where: { nome: check.categoria } });
+    const newCategoryRecord = await prisma.category.findUnique({ where: { nome: categoria } });
+
+    const oldLimit = oldCategory ? (oldCategory as any).tempoResolucao : 72;
+    const newLimit = newCategoryRecord ? (newCategoryRecord as any).tempoResolucao : 72;
+
+    const updateData: any = { categoria };
+
+    if (check.vencimentoSLA) {
+        const diffMs = (newLimit - oldLimit) * 60 * 60 * 1000;
+        updateData.vencimentoSLA = new Date(new Date(check.vencimentoSLA).getTime() + diffMs);
+    }
+
     const ticket = await prisma.ticket.update({
         where: { id: ticketId },
-        data: { categoria }
+        data: updateData
     });
 
     await prisma.auditLog.create({
         data: {
             acao: "MUDANCA_STATUS",
-            detalhes: `Categoria realinhada manualmente para ${categoria}.`,
+            detalhes: `Categoria realinhada manualmente para ${categoria}. SLA recalculado (${newLimit}h).`,
             ticketId,
             userId: session.user.id
         }
@@ -660,6 +725,14 @@ export async function vincularTecnicoSecundario(ticketId: string, tecnicoId: str
     const session = await getServerSession(authOptions);
     if (!session || !session.user || session.user.role === "USUARIO") throw new Error("Não autorizado");
 
+    const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) throw new Error("Chamado não encontrado.");
+
+    // Trava de Segurança: Apenas o dono do chamado (responsável primário) pode gerenciar apoios
+    if (ticket.responsavelId !== session.user.id) {
+        throw new Error("Ação Negada: Apenas o técnico responsável principal pode gerenciar a equipe de apoio.");
+    }
+
     const tecnico = await prisma.user.findUnique({ where: { id: tecnicoId } });
     if (!tecnico) throw new Error("Técnico não encontrado.");
 
@@ -687,6 +760,14 @@ export async function vincularTecnicoSecundario(ticketId: string, tecnicoId: str
 export async function desvincularTecnicoSecundario(ticketId: string, tecnicoId: string) {
     const session = await getServerSession(authOptions);
     if (!session || !session.user || session.user.role === "USUARIO") throw new Error("Não autorizado");
+
+    const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) throw new Error("Chamado não encontrado.");
+
+    // Trava de Segurança
+    if (ticket.responsavelId !== session.user.id) {
+        throw new Error("Ação Negada: Apenas o técnico responsável principal pode gerenciar a equipe de apoio.");
+    }
 
     const tecnico = await prisma.user.findUnique({ where: { id: tecnicoId } });
     if (!tecnico) throw new Error("Técnico não encontrado.");
@@ -815,4 +896,62 @@ export async function updateSLASettings(data: { tempoMaximoAssuncao: number; tem
 
     revalidatePath("/dashboard/admin/sla");
     return settings;
+}
+export async function resetTicketToOpen(ticketId: string) {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user || session.user.role === "USUARIO") throw new Error("Não autorizado");
+
+    const result = await prisma.$transaction(async (tx) => {
+        const ticket = await tx.ticket.findUnique({
+            where: { id: ticketId },
+            include: {
+                comments: {
+                    where: { autorId: session.user.id, isInterno: false }
+                }
+            }
+        });
+
+        if (!ticket) throw new Error("Chamado não encontrado");
+        
+        if (ticket.status === "RESOLVIDO" || ticket.status === "FECHADO") {
+            throw new Error("Não é possível resetar um chamado encerrado.");
+        }
+
+        // Verificação de segurança: Só pode resetar se o técnico logado for o responsável
+        // E NÃO tiver enviado comentários públicos ainda.
+        if (ticket.responsavelId !== session.user.id) {
+            throw new Error("Apenas o técnico responsável pode devolver o chamado para a fila.");
+        }
+
+        if (ticket.comments.length > 0) {
+            throw new Error("Não é possível devolver o chamado após ter enviado mensagens ao usuário.");
+        }
+
+        const updated = await tx.ticket.update({
+            where: { id: ticketId },
+            data: {
+                status: "ABERTO",
+                responsavelId: null,
+                dataAssuncao: null,
+                tecnicosSecundarios: {
+                    set: [] // Desvincula todos os técnicos de apoio
+                }
+            } as any
+        });
+
+        await tx.auditLog.create({
+            data: {
+                acao: "MUDANCA_STATUS",
+                detalhes: "Chamado devolvido para a fila (Status ABERTO) pelo técnico responsável.",
+                ticketId,
+                userId: session.user.id
+            }
+        });
+
+        return updated;
+    });
+
+    revalidatePath(`/dashboard/ticket/${ticketId}`);
+    revalidatePath("/dashboard");
+    return result;
 }

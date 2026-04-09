@@ -23,9 +23,10 @@ export default function NewCategoryButton() {
         const nome = formData.get("nome") as string;
         const prioridadePadrao = formData.get("prioridadePadrao") as string;
         const placeholder = formData.get("placeholder") as string;
+        const tempoResolucao = parseInt(formData.get("tempoResolucao") as string) || 72;
 
         try {
-            await createCategory(nome, prioridadePadrao, placeholder);
+            await createCategory(nome, prioridadePadrao, placeholder, tempoResolucao);
             setOpen(false);
         } catch (err: any) {
             setError(err.message || "Ocorreu um erro ao criar a categoria.");
@@ -46,7 +47,7 @@ export default function NewCategoryButton() {
                     <DialogHeader>
                         <DialogTitle>Nova Categoria</DialogTitle>
                         <DialogDescription>
-                            Adicione um novo tipo de chamado e defina sua prioridade base.
+                            Adicione um novo tipo de chamado e defina sua prioridade base e SLA.
                         </DialogDescription>
                     </DialogHeader>
 
@@ -60,24 +61,32 @@ export default function NewCategoryButton() {
                             <Label htmlFor="nome">Nome da Categoria</Label>
                             <Input id="nome" name="nome" placeholder="Ex: MANUTENÇÃO" required className="uppercase" />
                         </div>
+                        <div className="space-y-4 pt-2">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="prioridadePadrao">Prioridade Padrão</Label>
+                                    <Select name="prioridadePadrao" defaultValue="BAIXA" required>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="BAIXA">Baixa</SelectItem>
+                                            <SelectItem value="MEDIA">Média</SelectItem>
+                                            <SelectItem value="ALTA">Alta</SelectItem>
+                                            <SelectItem value="CRITICA">Crítica</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="tempoResolucao">SLA (Horas)</Label>
+                                    <Input id="tempoResolucao" name="tempoResolucao" type="number" defaultValue={72} min={1} required />
+                                </div>
+                            </div>
+                        </div>
                         <div className="space-y-2">
                             <Label htmlFor="placeholder">Instruções para o Usuário (Opcional)</Label>
                             <Input id="placeholder" name="placeholder" placeholder="Ex: Informe qual sistema, a placa da máquina..." />
-                            <p className="text-[0.8rem] text-slate-500 dark:text-slate-400">Exibido na caixa de texto quando esta categoria for selecionada.</p>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="prioridadePadrao">Prioridade Padrão</Label>
-                            <Select name="prioridadePadrao" defaultValue="BAIXA" required>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Selecione..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="BAIXA">Baixa</SelectItem>
-                                    <SelectItem value="MEDIA">Média</SelectItem>
-                                    <SelectItem value="ALTA">Alta</SelectItem>
-                                    <SelectItem value="CRITICA">Crítica</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <p className="text-[0.75rem] text-slate-500 dark:text-slate-400">Exibido na caixa de texto quando esta categoria for selecionada.</p>
                         </div>
                     </div>
 

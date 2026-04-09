@@ -52,6 +52,9 @@ model Ticket {
   dataAssuncao         DateTime?
   dataResolucao        DateTime?
   dataFechamento       DateTime?
+  vencimentoSLA        DateTime?
+  ultimoPausa          DateTime?
+  totalPausado         Int            @default(0)
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
   searchVector         String?
@@ -109,6 +112,7 @@ model Category {
   prioridadePadrao String   @default("BAIXA")
   ativo            Boolean  @default(true)
   placeholder      String?
+  tempoResolucao   Int      @default(72)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }

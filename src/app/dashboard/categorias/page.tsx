@@ -58,6 +58,7 @@ export default async function AdminCategoriasPage() {
                                     <TableHead className="w-[80px]">ID</TableHead>
                                     <TableHead>Nome da Categoria</TableHead>
                                     <TableHead>Prioridade Padrão</TableHead>
+                                    <TableHead>SLA (Horas)</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead className="text-right">Ação</TableHead>
                                 </TableRow>
@@ -75,6 +76,9 @@ export default async function AdminCategoriasPage() {
                                             <Badge className={getPriorityBadgeClass(cat.prioridadePadrao)}>
                                                 {cat.prioridadePadrao}
                                             </Badge>
+                                        </TableCell>
+                                        <TableCell className="font-medium text-slate-600 dark:text-slate-400">
+                                            {cat.tempoResolucao || 72}h
                                         </TableCell>
                                         <TableCell>
                                             {cat.ativo ? (

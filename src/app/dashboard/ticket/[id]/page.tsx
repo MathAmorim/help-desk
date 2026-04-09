@@ -276,6 +276,7 @@ export default async function TicketDetailsPage({ params }: { params: Promise<{ 
                         responsavelId={ticket.responsavelId}
                         currentPriority={ticket.prioridade}
                         tecnicosSecundarios={ticket.tecnicosSecundarios}
+                        userMessageCount={ticket.comments.filter((c: any) => c.autorId === session.user.id && !c.isInterno).length}
                     />
 
                     {isSupportOrAdmin && ticket.auditLogs && (

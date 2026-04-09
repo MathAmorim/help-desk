@@ -24,9 +24,10 @@ export default function EditCategoryButton({ category }: { category: any }) {
         const nome = formData.get("nome") as string;
         const prioridadePadrao = formData.get("prioridadePadrao") as string;
         const placeholder = formData.get("placeholder") as string;
+        const tempoResolucao = parseInt(formData.get("tempoResolucao") as string) || 72;
 
         try {
-            await updateCategory(category.id, nome, prioridadePadrao, ativo === "sim", placeholder);
+            await updateCategory(category.id, nome, prioridadePadrao, ativo === "sim", placeholder, tempoResolucao);
             setOpen(false);
         } catch (err: any) {
             setError(err.message || "Ocorreu um erro ao atualizar a categoria.");
@@ -47,7 +48,7 @@ export default function EditCategoryButton({ category }: { category: any }) {
                     <DialogHeader>
                         <DialogTitle>Editar Categoria</DialogTitle>
                         <DialogDescription>
-                            Altere as preferências desta categoria ou desative-a.
+                            Altere as preferências desta categoria, SLA ou desative-a.
                         </DialogDescription>
                     </DialogHeader>
 
@@ -61,24 +62,32 @@ export default function EditCategoryButton({ category }: { category: any }) {
                             <Label htmlFor="nome">Nome da Categoria</Label>
                             <Input id="nome" name="nome" defaultValue={category.nome} required className="uppercase" />
                         </div>
+                        <div className="space-y-4 pt-2">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="prioridadePadrao">Prioridade Padrão</Label>
+                                    <Select name="prioridadePadrao" defaultValue={category.prioridadePadrao} required>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="BAIXA">Baixa</SelectItem>
+                                            <SelectItem value="MEDIA">Média</SelectItem>
+                                            <SelectItem value="ALTA">Alta</SelectItem>
+                                            <SelectItem value="CRITICA">Crítica</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="tempoResolucao">SLA (Horas)</Label>
+                                    <Input id="tempoResolucao" name="tempoResolucao" type="number" defaultValue={category.tempoResolucao || 72} min={1} required />
+                                </div>
+                            </div>
+                        </div>
                         <div className="space-y-2">
                             <Label htmlFor="placeholder">Instruções para o Usuário (Opcional)</Label>
                             <Input id="placeholder" name="placeholder" defaultValue={category.placeholder || ""} placeholder="Ex: Informe a placa e setor" />
-                            <p className="text-[0.8rem] text-slate-500 dark:text-slate-400">Exibido na caixa de relato de problema como guia.</p>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="prioridadePadrao">Prioridade Padrão</Label>
-                            <Select name="prioridadePadrao" defaultValue={category.prioridadePadrao} required>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Selecione..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="BAIXA">Baixa</SelectItem>
-                                    <SelectItem value="MEDIA">Média</SelectItem>
-                                    <SelectItem value="ALTA">Alta</SelectItem>
-                                    <SelectItem value="CRITICA">Crítica</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <p className="text-[0.75rem] text-slate-500 dark:text-slate-400">Exibido na caixa de relato de problema como guia.</p>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="ativo">Status de Visibilidade</Label>

@@ -5,7 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
-export async function createCategory(nome: string, prioridadePadrao: string, placeholder?: string) {
+export async function createCategory(nome: string, prioridadePadrao: string, placeholder?: string, tempoResolucao?: number) {
     const session = await getServerSession(authOptions);
     if (!session || !session.user || (session.user.role !== "ADMIN" && session.user.role !== "SUPORTE")) {
         throw new Error("Não autorizado");
@@ -15,15 +15,17 @@ export async function createCategory(nome: string, prioridadePadrao: string, pla
         data: {
             nome: nome.toUpperCase(),
             prioridadePadrao,
-            placeholder
-        }
+            placeholder,
+            tempoResolucao: tempoResolucao ?? 72
+        } as any
     });
 
     revalidatePath("/dashboard/categorias");
     revalidatePath("/dashboard/novo");
+    revalidatePath("/dashboard/admin/sla");
 }
 
-export async function updateCategory(id: string, nome: string, prioridadePadrao: string, ativo: boolean, placeholder?: string) {
+export async function updateCategory(id: string, nome: string, prioridadePadrao: string, ativo: boolean, placeholder?: string, tempoResolucao?: number) {
     const session = await getServerSession(authOptions);
     if (!session || !session.user || (session.user.role !== "ADMIN" && session.user.role !== "SUPORTE")) {
         throw new Error("Não autorizado");
@@ -35,12 +37,14 @@ export async function updateCategory(id: string, nome: string, prioridadePadrao:
             nome: nome.toUpperCase(),
             prioridadePadrao,
             ativo,
-            placeholder
-        }
+            placeholder,
+            tempoResolucao: tempoResolucao ?? 72
+        } as any
     });
 
     revalidatePath("/dashboard/categorias");
     revalidatePath("/dashboard/novo");
+    revalidatePath("/dashboard/admin/sla");
 }
 
 export async function getCategories(somenteAtivas = true) {
