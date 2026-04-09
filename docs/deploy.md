@@ -72,7 +72,18 @@ Se precisar interagir com o sistema sem o script:
 | `pm2 status` | Verifica se o app está rodando. |
 | `pm2 logs help-desk` | Visualiza erros em tempo real. |
 | `pm2 reload help-desk` | Reinicia o app sem quedas (Zero Downtime). |
-| `npm run restore [ARQUIVO]` | Restaura um backup específico manualmente. |
+| `npm run backup` | Gera um snapshot completo manual (DB + Anexos). |
+| `npm run restore [ZIP]` | Restaura um backup específico manualmente. |
+
+---
+
+## 👥 6. Gestão de Usuários (JSON)
+
+Foi implementado um sistema de **Importação e Exportação Massiva** via JSON no Painel Admin:
+
+- **Exportar**: Gera um JSON com todos os dados dos usuários (Nome, CPF, Setor, etc), **sem as senhas**.
+- **Importar**: Permite carregar centenas de usuários de uma vez. O sistema gera automaticamente senhas aleatórias e define `Trocar Senha no Próximo Acesso` para todos.
+- **Segurança**: Antes de importar, o sistema verifica se o CPF ou E-mail já existem para evitar duplicatas. Um recibo com as novas senhas é gerado ao final do processo.
 
 ---
 **Importante**: Sempre mantenha o arquivo `deploy.sh` com permissão de execução: `chmod +x deploy.sh`.
