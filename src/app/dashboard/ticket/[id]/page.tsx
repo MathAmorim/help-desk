@@ -218,7 +218,10 @@ export default async function TicketDetailsPage({ params }: { params: Promise<{ 
                         <CardContent className="pt-4 space-y-4 text-sm">
                             <div>
                                 <span className="text-slate-500 dark:text-slate-400 block mb-1 font-medium">Nome / E-mail</span>
-                                <span className="font-semibold text-slate-800 dark:text-slate-200">{ticket.solicitante.name}</span>
+                                <span className="font-semibold text-slate-800 dark:text-slate-200 block">{ticket.solicitante.name}</span>
+                                {ticket.solicitante.funcao && (
+                                    <span className="text-xs text-indigo-600 dark:text-indigo-400 font-bold uppercase block my-0.5">{ticket.solicitante.funcao}</span>
+                                )}
                                 <span className="block text-slate-500 dark:text-slate-400">{ticket.solicitante.email}</span>
                             </div>
                             {ticket.departamento && (

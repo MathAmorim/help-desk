@@ -151,7 +151,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
                                             </TableCell>
                                             <TableCell>
                                                 <div className="font-medium text-slate-900 dark:text-slate-100">{user.name}</div>
-                                                {user.funcao && <div className="text-xs text-slate-500">{user.funcao}</div>}
+                                                {user.funcao && <div className="text-xs text-slate-500 font-medium">{user.funcao}</div>}
                                             </TableCell>
                                             <TableCell>
                                                 <div className="text-slate-600 dark:text-slate-400 text-sm">{user.email || "Sem e-mail"}</div>

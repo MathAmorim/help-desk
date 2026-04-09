@@ -152,7 +152,7 @@ export async function getMyTickets(filters?: TicketFilters) {
                 select: { name: true },
             },
             solicitante: {
-                select: { name: true }
+                select: { name: true, role: true, funcao: true }
             }
         },
     });
@@ -183,7 +183,7 @@ export async function getAllTickets(filters?: TicketFilters) {
         orderBy: { createdAt: "desc" },
         include: {
             solicitante: {
-                select: { name: true, email: true },
+                select: { name: true, email: true, role: true, funcao: true },
             },
             responsavel: {
                 select: { name: true },
@@ -199,7 +199,7 @@ export async function getTicketById(id: string) {
     const ticket = await prisma.ticket.findUnique({
         where: { id },
         include: {
-            solicitante: { select: { name: true, email: true } },
+            solicitante: { select: { name: true, email: true, role: true, funcao: true } },
             responsavel: { select: { name: true } },
             attachments: true,
             comments: {

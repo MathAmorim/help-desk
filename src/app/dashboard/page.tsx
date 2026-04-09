@@ -127,9 +127,9 @@ export default async function DashboardPage({
                             <CardTitle className="text-lg">
                                 {isAdminOrSupport ? "Todos os Chamados" : "Meus Chamados"}
                             </CardTitle>
-                            <CardDescription>
+                            <CardTitle className="text-xs mt-1 text-slate-500 font-normal">
                                 Exibindo {tickets.length} chamados no total.
-                            </CardDescription>
+                            </CardTitle>
                         </div>
                     </div>
                 </CardHeader>
@@ -191,8 +191,16 @@ export default async function DashboardPage({
                                             </TableCell>
                                             {isAdminOrSupport && (
                                                 <TableCell className="text-sm">
-                                                    {/* @ts-ignore - The type is correct but maybe omitted in query occasionally if not mapped correctly */}
-                                                    <span title={ticket.solicitante?.email}>{ticket.solicitante?.name || "Desconhecido"}</span>
+                                                    <div className="flex flex-col">
+                                                        <span className="font-medium" title={ticket.solicitante?.email}>
+                                                            {ticket.solicitante?.name || "Desconhecido"}
+                                                        </span>
+                                                        {ticket.solicitante?.funcao && (
+                                                            <span className="text-[10px] text-slate-500 font-bold uppercase truncate max-w-[120px]">
+                                                                {ticket.solicitante.funcao}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </TableCell>
                                             )}
                                             <TableCell className="text-sm text-slate-600 dark:text-slate-400">

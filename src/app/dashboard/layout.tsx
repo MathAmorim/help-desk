@@ -61,9 +61,12 @@ export default async function DashboardLayout({
                 {/* Lado Direito (Perfil, Notificações e Sair) */}
                 <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-0 pt-2 sm:pt-0">
                     <div className="flex flex-col items-center justify-center -space-y-0.5">
-                        <span className="font-medium text-sm text-slate-800 dark:text-slate-200">{session.user.name}</span>
+                        <span className="font-bold text-sm text-slate-900 dark:text-slate-100">{session.user.name}</span>
+                        {session.user.funcao && (
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-tight">{session.user.funcao}</span>
+                        )}
                         {session.user.role !== "USUARIO" && (
-                            <span className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold">{session.user.role}</span>
+                            <span className="text-[9px] uppercase tracking-widest text-indigo-600 dark:text-indigo-400 font-extrabold">{session.user.role}</span>
                         )}
                     </div>
 

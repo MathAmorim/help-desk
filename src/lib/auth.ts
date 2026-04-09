@@ -76,6 +76,7 @@ export const authOptions: NextAuthOptions = {
                     name: user.name,
                     email: user.email,
                     role: user.role,
+                    funcao: user.funcao,
                     mustChangePassword: (user as any).mustChangePassword,
                     theme: user.theme
                 };
@@ -89,6 +90,7 @@ export const authOptions: NextAuthOptions = {
                 token.id = user.id;
                 token.mustChangePassword = (user as any).mustChangePassword;
                 token.theme = (user as any).theme;
+                token.funcao = (user as any).funcao;
             }
 
             // Real-Time Validation: Verifica no banco a cada ciclo se a conta foi rebaixada ou excluída.
@@ -123,6 +125,7 @@ export const authOptions: NextAuthOptions = {
             if (token && session.user) {
                 session.user.role = token.role as string;
                 session.user.id = token.id as string;
+                session.user.funcao = token.funcao as string;
                 (session.user as any).mustChangePassword = token.mustChangePassword;
                 (session.user as any).theme = token.theme as string;
             }
