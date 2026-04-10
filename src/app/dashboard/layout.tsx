@@ -52,6 +52,11 @@ export default async function DashboardLayout({
                                 </Link>
                             </>
                         )}
+                        {session.user.role === "USUARIO" && (
+                            <Link href="/dashboard/meus-relatorios" className="px-3 py-1.5 text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/30 rounded-md transition-colors whitespace-nowrap">
+                                Meus Relatórios
+                            </Link>
+                        )}
                         <Link href="/dashboard/configuracoes" className="px-3 py-1.5 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 rounded-md transition-colors whitespace-nowrap">
                             Configurações
                         </Link>

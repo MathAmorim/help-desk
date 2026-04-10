@@ -180,3 +180,27 @@ export async function getDashboardMetrics(periodo: string) {
         }
     };
 }
+export async function getUserBasicMetrics() {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user) throw new Error("Não autorizado");
+
+    const userId = session.user.id;
+
+    // Total histórico de chamados abertos pelo usuário
+    const totalAbrertosHistorico = await prisma.ticket.count({
+        where: { solicitanteId: userId }
+    });
+
+    // Chamados atualmente em aberto (pendentes)
+    const emAbertoAgora = await prisma.ticket.count({
+        where: {
+            solicitanteId: userId,
+            status: { notIn: ["RESOLVIDO", "FECHADO"] }
+        }
+    });
+
+    return {
+        totalAbrertosHistorico,
+        emAbertoAgora
+    };
+}
