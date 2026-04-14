@@ -65,6 +65,7 @@ export default function LoginPage() {
                 alt=""
                 fill
                 priority
+                sizes="(min-width: 768px) 100vw, 1px"
                 placeholder="blur"
                 className="hidden md:block object-cover object-center -z-10"
             />
@@ -73,6 +74,7 @@ export default function LoginPage() {
                 alt=""
                 fill
                 priority
+                sizes="(max-width: 767px) 100vw, 1px"
                 placeholder="blur"
                 className="block md:hidden object-cover object-center -z-10"
             />
@@ -84,7 +86,9 @@ export default function LoginPage() {
                             <Image
                                 src={logoCpd}
                                 alt="Logo CPD"
-                                height={160}
+                                width={100}
+                                height={100}
+                                priority
                                 placeholder="blur"
                                 className="w-auto object-contain drop-shadow-md"
                             />

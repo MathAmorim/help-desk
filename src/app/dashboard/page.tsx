@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle, Search, Star } from "lucide-react";
 import { timeAgo } from "@/lib/utils";
 import { Filters } from "./Filters";
+import AnnouncementBanner from "@/components/AnnouncementBanner";
 
 export default async function DashboardPage({
     searchParams,
@@ -74,6 +75,7 @@ export default async function DashboardPage({
 
     return (
         <div className="space-y-6">
+            <AnnouncementBanner />
             {unratedTickets.length > 0 && (
                 <div className="bg-gradient-to-r from-indigo-600 to-violet-600 rounded-lg p-5 sm:p-6 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between text-white gap-4 relative overflow-hidden animate-in slide-in-from-top-4 fade-in duration-500">
                     <div className="absolute -right-10 -top-10 opacity-10">

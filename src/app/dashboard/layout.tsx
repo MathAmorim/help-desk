@@ -57,6 +57,9 @@ export default async function DashboardLayout({
                                 Meus Relatórios
                             </Link>
                         )}
+                        <Link href="/dashboard/avisos" className="px-3 py-1.5 text-sm font-semibold text-orange-600 dark:text-orange-400 hover:bg-orange-100/50 dark:hover:bg-orange-900/30 rounded-md transition-colors whitespace-nowrap">
+                            Avisos
+                        </Link>
                         <Link href="/dashboard/configuracoes" className="px-3 py-1.5 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 rounded-md transition-colors whitespace-nowrap">
                             Configurações
                         </Link>

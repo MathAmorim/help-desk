@@ -31,6 +31,7 @@ model User {
   ticketsAtribuidos   Ticket[]       @relation("TicketResponsavel")
   ticketsSolicitados  Ticket[]       @relation("TicketSolicitante")
   chamadosSecundarios Ticket[]       @relation("TicketTecnicosSecundarios")
+  announcements       Announcement[] @relation("AnnouncementCreator")
 }
 
 model Ticket {
@@ -143,4 +144,19 @@ model Setting {
   tempoMaximoAssuncao  Int      @default(24)
   tempoMaximoConclusao Int      @default(72)
   updatedAt            DateTime @updatedAt
+}
+
+model Announcement {
+  id        String    @id @default(cuid())
+  title     String
+  content   String
+  severity  String    @default("INFO") // INFO, WARNING, CRITICAL
+  active    Boolean   @default(true)
+  expiresAt DateTime?
+  userId    String
+  creator   User      @relation("AnnouncementCreator", fields: [userId], references: [id])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId])
 }
