@@ -451,6 +451,16 @@ if [ ! -f "/etc/nginx/sites-available/help-desk" ]; then
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
+    
+    # Playit.gg Tunneling (Proxy Protocol v2)
+    listen 8080 proxy_protocol;
+    listen [::]:8080 proxy_protocol;
+    
+    # Real IP mapping for Proxies
+    set_real_ip_from 127.0.0.1;
+    set_real_ip_from ::1;
+    real_ip_header proxy_protocol;
+
     server_name ${APP_DOMAIN:-_};
 
     # Hardening Básico: Esconde a versão do SO/Nginx
