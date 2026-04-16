@@ -92,11 +92,6 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
                             Gerenciar Setores
                         </Button>
                     </Link>
-                    <Link href="/dashboard/avisos">
-                        <Button variant="outline" className="h-10 text-orange-600 dark:text-orange-500 border-orange-200 dark:border-orange-900 bg-orange-50/50 dark:bg-orange-950/20 hover:bg-orange-100 dark:hover:bg-orange-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm">
-                            Gerenciar Avisos
-                        </Button>
-                    </Link>
                     <NewUserButton sectors={sectors} />
                 </div>
             </div>

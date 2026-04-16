@@ -56,11 +56,6 @@ export default function MeusRelatoriosPage() {
                     </CardContent>
                 </Card>
             </div>
-
-            <div className="p-6 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm border-dashed text-center space-y-2">
-                <p className="text-slate-600 dark:text-slate-400 text-sm font-semibold italic">"Colocar um texto aqui"</p>
-                <p className="text-slate-400 dark:text-slate-500 text-xs">— Equipe de Suporte</p>
-            </div>
         </div>
     );
 }

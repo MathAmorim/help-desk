@@ -15,6 +15,7 @@ export default function NewUserButton({ sectors = [] }: { sectors?: string[] }) 
     const [error, setError] = useState<string | null>(null);
     const [isPending, setIsPending] = useState(false);
     const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
+    const [generatedCpf, setGeneratedCpf] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -35,6 +36,7 @@ export default function NewUserButton({ sectors = [] }: { sectors?: string[] }) 
         try {
             const result = await createUser({ name, email, role, cpf, funcao, setor });
             setGeneratedPassword(result.tempPassword);
+            setGeneratedCpf(cpf);
         } catch (err: any) {
             setError(err.message || "Ocorreu um erro ao criar usuário.");
         } finally {
@@ -43,8 +45,9 @@ export default function NewUserButton({ sectors = [] }: { sectors?: string[] }) 
     }
 
     const handleCopy = () => {
-        if (generatedPassword) {
-            navigator.clipboard.writeText(generatedPassword);
+        if (generatedPassword && generatedCpf) {
+            const copyText = `Acesse o sistema usando essas informações de login, o sistema vai obrigar a cadastrar uma nova senha no primeiro acesso.\nLogin: ${generatedCpf}\nSenha: ${generatedPassword}`;
+            navigator.clipboard.writeText(copyText);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         }
@@ -55,6 +58,7 @@ export default function NewUserButton({ sectors = [] }: { sectors?: string[] }) 
         // Reseta tudo ao fechar
         setTimeout(() => {
             setGeneratedPassword(null);
+            setGeneratedCpf(null);
             setError(null);
         }, 300);
     };
@@ -154,7 +158,7 @@ export default function NewUserButton({ sectors = [] }: { sectors?: string[] }) 
                                 <Check className="h-6 w-6 text-green-600" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-slate-900">Usuário Criado!</h3>
+                                <h3 className="text-lg font-bold">Usuário Criado!</h3>
                                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                                     Copie a senha provisória abaixo e envie para o novo usuário.
                                 </p>
@@ -172,7 +176,7 @@ export default function NewUserButton({ sectors = [] }: { sectors?: string[] }) 
                                 </Button>
                             </div>
                             <div className="text-center text-xs text-amber-600 font-medium pt-2">
-                                O banco de dados a marcou para troca obrigatória.
+                                A troca de senha é obrigatória.
                             </div>
                         </div>
 

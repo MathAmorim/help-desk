@@ -85,9 +85,9 @@ export default function ResetUserButton({ userId, userName }: { userId: string, 
                                 <KeyRound className="h-6 w-6 text-amber-600" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-slate-900">Senha Alterada!</h3>
+                                <h3 className="text-lg font-bold">Senha Alterada!</h3>
                                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                                    O usuário <strong>{userName}</strong> foi forçado à troca no próximo login. Envie esta senha provisória:
+                                    O usuário <strong>{userName}</strong> será obrigado a trocar a senha no próximo login. Envie esta senha provisória:
                                 </p>
                             </div>
                         </div>
