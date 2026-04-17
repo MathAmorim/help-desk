@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // Só permite dev origins fora de produção
   ...(process.env.NODE_ENV !== "production" && {
-    allowedDevOrigins: ["192.168.1.97", "[IP_ADDRESS]"],
+    allowedDevOrigins: ["10.2.3.187"],
   }),
 
   async headers() {

@@ -142,13 +142,13 @@ export default async function DashboardPage({
                         <Table>
                             <TableHeader className="bg-slate-50 dark:bg-slate-900">
                                 <TableRow>
-                                    <TableHead className="w-[100px]">ID</TableHead>
+                                    <TableHead className="hidden md:table-cell w-[100px]">ID</TableHead>
                                     <TableHead>Título</TableHead>
-                                    <TableHead>Categoria</TableHead>
+                                    <TableHead className="hidden md:table-cell">Categoria</TableHead>
                                     <TableHead>Status</TableHead>
-                                    <TableHead>Prioridade</TableHead>
-                                    {isAdminOrSupport && <TableHead>Solicitante</TableHead>}
-                                    <TableHead>Responsável</TableHead>
+                                    <TableHead className="hidden md:table-cell">Prioridade</TableHead>
+                                    {isAdminOrSupport && <TableHead className="hidden md:table-cell">Solicitante</TableHead>}
+                                    <TableHead className="hidden md:table-cell">Responsável</TableHead>
                                     <TableHead className="text-right">Ação</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -165,14 +165,14 @@ export default async function DashboardPage({
                                 ) : (
                                     tickets.map((ticket: any) => (
                                         <TableRow key={ticket.id} className="hover:bg-slate-50/50 dark:bg-slate-900/50 transition-colors">
-                                            <TableCell className="font-mono text-xs text-slate-500 dark:text-slate-400">
+                                            <TableCell className="hidden md:table-cell font-mono text-xs text-slate-500 dark:text-slate-400">
                                                 <div className="font-semibold text-slate-700 dark:text-slate-300">#{ticket.id.substring(ticket.id.length - 6).toUpperCase()}</div>
                                                 <div className="text-[10px] whitespace-nowrap opacity-75">{timeAgo(ticket.createdAt)}</div>
                                             </TableCell>
                                             <TableCell className="font-medium max-w-[200px] truncate" title={ticket.titulo}>
                                                 {ticket.titulo}
                                             </TableCell>
-                                            <TableCell className="text-slate-600 dark:text-slate-400 text-sm">
+                                            <TableCell className="hidden md:table-cell text-slate-600 dark:text-slate-400 text-sm">
                                                 {ticket.categoria}
                                             </TableCell>
                                             <TableCell>
@@ -190,11 +190,11 @@ export default async function DashboardPage({
                                                     </div>
                                                 )}
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell className="hidden md:table-cell">
                                                 {renderPriorityBadge(ticket.prioridade)}
                                             </TableCell>
                                             {isAdminOrSupport && (
-                                                <TableCell className="text-sm">
+                                                <TableCell className="hidden md:table-cell text-sm">
                                                     <div className="flex flex-col">
                                                         <span className="font-medium" title={ticket.solicitante?.email}>
                                                             {ticket.solicitante?.name || "Desconhecido"}
@@ -207,7 +207,7 @@ export default async function DashboardPage({
                                                     </div>
                                                 </TableCell>
                                             )}
-                                            <TableCell className="text-sm text-slate-600 dark:text-slate-400">
+                                            <TableCell className="hidden md:table-cell text-sm text-slate-600 dark:text-slate-400">
                                                 {ticket.encerradoPeloAutor ? (
                                                     <span className="text-emerald-700 dark:text-emerald-500 font-semibold italic">Encerrado pelo Autor</span>
                                                 ) : ticket.responsavel ? ticket.responsavel.name : (

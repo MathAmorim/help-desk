@@ -86,7 +86,7 @@ export default function NotificationBell() {
 
     if (!isMounted) {
         return (
-            <div className="relative flex items-center justify-center h-10 w-10 text-slate-600 dark:text-slate-300 rounded-md hidden sm:flex">
+            <div className="relative flex items-center justify-center h-10 w-10 text-slate-600 dark:text-slate-300 rounded-md">
                 <Bell className="h-5 w-5" />
             </div>
         );
@@ -94,7 +94,7 @@ export default function NotificationBell() {
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger className="relative flex items-center justify-center h-10 w-10 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors hidden sm:flex focus:outline-none">
+            <PopoverTrigger className="relative flex items-center justify-center h-10 w-10 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors focus:outline-none">
                 <Bell className="h-5 w-5" />
                 {notifications.length > 0 && (
                     <span className="absolute top-1 right-2 inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white bg-red-500 rounded-full border-2 border-white dark:border-slate-950">
