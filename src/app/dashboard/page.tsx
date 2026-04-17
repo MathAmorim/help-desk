@@ -11,6 +11,7 @@ import { PlusCircle, Search, Star } from "lucide-react";
 import { timeAgo } from "@/lib/utils";
 import { Filters } from "./Filters";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
+import { AutoRefresh } from "@/components/AutoRefresh";
 
 export default async function DashboardPage({
     searchParams,
@@ -74,7 +75,8 @@ export default async function DashboardPage({
     });
 
     return (
-        <div className="space-y-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+            <AutoRefresh interval={15000} />
             <AnnouncementBanner />
             {unratedTickets.length > 0 && (
                 <div className="bg-gradient-to-r from-indigo-600 to-violet-600 rounded-lg p-5 sm:p-6 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between text-white gap-4 relative overflow-hidden animate-in slide-in-from-top-4 fade-in duration-500">
