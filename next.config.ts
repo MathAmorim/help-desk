@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  transpilePackages: ["next-auth"],
   // Só permite dev origins fora de produção
   ...(process.env.NODE_ENV !== "production" && {
     allowedDevOrigins: ["10.2.3.187"],
