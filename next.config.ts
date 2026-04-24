@@ -1,7 +1,16 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
   transpilePackages: ["next-auth"],
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "next-auth/react": path.resolve(__dirname, "node_modules/next-auth/react/index.js"),
+      "next-auth/jwt": path.resolve(__dirname, "node_modules/next-auth/jwt/index.js"),
+    };
+    return config;
+  },
   // Só permite dev origins fora de produção
   ...(process.env.NODE_ENV !== "production" && {
     allowedDevOrigins: ["10.2.3.187"],
