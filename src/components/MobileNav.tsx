@@ -32,7 +32,7 @@ export function MobileNav({ role }: { role: string }) {
                         {(role === "ADMIN" || role === "SUPORTE") && (
                             <Link href="/dashboard/todos" onClick={closeMenu} className="flex items-center gap-3 text-lg font-bold p-3 bg-cyan-50 dark:bg-cyan-950/20 text-cyan-700 dark:text-cyan-400 rounded-xl hover:bg-cyan-100 transition-colors">
                                 <ListFilter className="h-5 w-5 opacity-80" />
-                                <span>Todos os Chamados</span>
+                                <span>Histórico</span>
                             </Link>
                         )}
                         {role === "ADMIN" && (

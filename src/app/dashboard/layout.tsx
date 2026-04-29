@@ -64,7 +64,7 @@ export default async function DashboardLayout({
                         {(session.user.role === "ADMIN" || session.user.role === "SUPORTE") && (
                             <>
                                 <Link href="/dashboard/todos" className="px-3 py-1.5 text-sm font-semibold text-cyan-600 dark:text-cyan-400 hover:bg-cyan-100/50 dark:hover:bg-cyan-900/30 rounded-md transition-colors whitespace-nowrap">
-                                    Todos os Chamados
+                                    Histórico
                                 </Link>
                                 <Link href="/dashboard/categorias" className="px-3 py-1.5 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100/50 dark:hover:bg-indigo-900/30 rounded-md transition-colors whitespace-nowrap">
                                     Categorias

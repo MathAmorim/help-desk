@@ -127,13 +127,6 @@ export default async function DashboardPage({
                     </p>
                 </div>
                 <div className="flex gap-3">
-                    {isAdminOrSupport && (
-                        <Link href="/dashboard/todos">
-                            <Button variant="outline" className="h-11 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 font-extrabold transition-all hover:scale-105 active:scale-95 shadow-sm">
-                                <ListFilter className="mr-2 h-5 w-5" /> Todos os Chamados
-                            </Button>
-                        </Link>
-                    )}
                     <Link href="/dashboard/novo">
                         <Button variant="outline" className="h-11 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-800 font-extrabold transition-all hover:scale-105 active:scale-95 shadow-sm">
                             <PlusCircle className="mr-2 h-5 w-5" /> Novo Chamado
@@ -154,7 +147,7 @@ export default async function DashboardPage({
                             <div className="flex items-center justify-between">
                                 <div>
                                     <CardTitle className="text-lg text-blue-700 dark:text-blue-400">
-                                        📋 Chamados Abertos
+                                        Chamados Abertos
                                     </CardTitle>
                                     <CardTitle className="text-xs mt-1 text-blue-500/70 dark:text-blue-400/60 font-normal">
                                         {ticketsAbertos.length === 0
@@ -245,7 +238,7 @@ export default async function DashboardPage({
                             <div className="flex items-center justify-between">
                                 <div>
                                     <CardTitle className="text-lg text-amber-700 dark:text-amber-400">
-                                        🔧 Meus Atendimentos
+                                        Meus Atendimentos
                                     </CardTitle>
                                     <CardTitle className="text-xs mt-1 text-amber-500/70 dark:text-amber-400/60 font-normal">
                                         {ticketsMeus.length === 0

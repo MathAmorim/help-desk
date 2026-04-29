@@ -75,24 +75,10 @@ export default async function TodosOsChamadosPage({
 
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <div className="flex items-center gap-3 mb-1">
-                        <Link href="/dashboard">
-                            <Button variant="ghost" size="sm" className="h-8 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 -ml-2">
-                                <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
-                            </Button>
-                        </Link>
-                    </div>
                     <h2 className="text-3xl font-bold tracking-tight">Todos os Chamados</h2>
                     <p className="text-slate-500 dark:text-slate-400 mt-1">
                         Histórico completo de chamados da organização com filtros avançados.
                     </p>
-                </div>
-                <div className="flex gap-3">
-                    <Link href="/dashboard/novo">
-                        <Button variant="outline" className="h-11 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-800 font-extrabold transition-all hover:scale-105 active:scale-95 shadow-sm">
-                            <PlusCircle className="mr-2 h-5 w-5" /> Novo Chamado
-                        </Button>
-                    </Link>
                 </div>
             </div>
 
