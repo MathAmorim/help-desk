@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -159,4 +159,15 @@ model Announcement {
   updatedAt DateTime  @updatedAt
 
   @@index([userId])
+}
+
+model InviteToken {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  used      Boolean   @default(false)
+  usedAt    DateTime?
+  usedById  String?   // ID do usuário que foi criado com este convite
+  expiresAt DateTime
+  createdBy String    // ID do admin que gerou o convite
+  createdAt DateTime  @default(now())
 }

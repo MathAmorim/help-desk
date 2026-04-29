@@ -66,9 +66,13 @@ export default function NewUserButton({ sectors = [] }: { sectors?: string[] }) 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger render={
-                <Button variant="outline" className="h-10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm" />
+                <Button variant="outline" className="w-full h-10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm" />
             }>
-                <UserPlus className="mr-2 h-4 w-4" /> Cadastrar Usuário
+                <div className="flex items-center justify-center">
+                    <UserPlus className="mr-2 h-4 w-4 shrink-0" /> 
+                    <span className="sm:hidden">Novo</span>
+                    <span className="hidden sm:inline">Cadastrar Usuário</span>
+                </div>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 {!generatedPassword ? (

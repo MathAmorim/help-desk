@@ -315,8 +315,7 @@ elif [ "$PROVIDER" == "sqlite" ]; then
     log_success "Driver SQLite (better-sqlite3) instalado."
 fi
 
-log_info "Executando Correção Heurística de Vulnerabilidades (Audit Fix Force)"
-npm audit fix --force > /dev/null 2>&1 || true
+
 
 log_info "Sincronizando DB Schemas (Prisma Engine)"
 # 1. Limpeza Proativa para Instalações Frescas (Novas ou Reset)
