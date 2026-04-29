@@ -1,13 +1,13 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getAllTickets, getMyTickets } from "@/app/actions/tickets";
+import { getFocusedTickets, getMyTickets } from "@/app/actions/tickets";
 import prisma from "@/lib/prisma";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Search, Star } from "lucide-react";
+import { PlusCircle, Search, Star, ListFilter } from "lucide-react";
 import { timeAgo } from "@/lib/utils";
 import { Filters } from "./Filters";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
@@ -24,20 +24,27 @@ export default async function DashboardPage({
         return null;
     }
 
-    const sp = await searchParams;
-
-    const filters = {
-        q: typeof sp.q === 'string' ? sp.q : undefined,
-        status: typeof sp.status === 'string' ? sp.status : undefined,
-        categoria: typeof sp.categoria === 'string' ? sp.categoria : undefined,
-        atrasado: sp.atrasado === 'true',
-    };
-
     const isAdminOrSupport = session.user.role === "SUPORTE" || session.user.role === "ADMIN";
-    const tickets = isAdminOrSupport ? await getAllTickets(filters) : await getMyTickets(filters);
 
-    const categoriasDb = await prisma.category.findMany({ select: { nome: true }, orderBy: { nome: "asc" } });
-    const categoriasList = categoriasDb.map((c: any) => c.nome);
+    // Para técnicos: visão focada (sem filtros). Para usuários: visão com filtros.
+    let tickets: any[];
+    let categoriasDb: any[] = [];
+    let categoriasList: string[] = [];
+
+    if (isAdminOrSupport) {
+        tickets = await getFocusedTickets();
+    } else {
+        const sp = await searchParams;
+        const filters = {
+            q: typeof sp.q === 'string' ? sp.q : undefined,
+            status: typeof sp.status === 'string' ? sp.status : undefined,
+            categoria: typeof sp.categoria === 'string' ? sp.categoria : undefined,
+            atrasado: sp.atrasado === 'true',
+        };
+        tickets = await getMyTickets(filters);
+        categoriasDb = await prisma.category.findMany({ select: { nome: true }, orderBy: { nome: "asc" } });
+        categoriasList = categoriasDb.map((c: any) => c.nome);
+    }
 
     // @ts-ignore - Prisma client maybe out of sync in this environment
     const settings = await prisma.setting.findUnique({ where: { id: "global" } });
@@ -74,6 +81,10 @@ export default async function DashboardPage({
         select: { id: true, titulo: true }
     });
 
+    // Separar chamados para a visão focada dos técnicos
+    const ticketsAbertos = isAdminOrSupport ? tickets.filter((t: any) => t.status === "ABERTO") : [];
+    const ticketsMeus = isAdminOrSupport ? tickets.filter((t: any) => t.status !== "ABERTO") : [];
+
     return (
         <div className="max-w-7xl mx-auto space-y-6">
             <AutoRefresh interval={15000} />
@@ -106,14 +117,23 @@ export default async function DashboardPage({
 
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight">Painel de Chamados</h2>
+                    <h2 className="text-3xl font-bold tracking-tight">
+                        {isAdminOrSupport ? "Fila de Atendimento" : "Painel de Chamados"}
+                    </h2>
                     <p className="text-slate-500 dark:text-slate-400 mt-1">
                         {isAdminOrSupport
-                            ? "Gerencie e atenda os chamados de TI da organização."
+                            ? "Chamados aguardando atendimento e os que você está resolvendo."
                             : "Acompanhe seus chamados de suporte técnico."}
                     </p>
                 </div>
                 <div className="flex gap-3">
+                    {isAdminOrSupport && (
+                        <Link href="/dashboard/todos">
+                            <Button variant="outline" className="h-11 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 font-extrabold transition-all hover:scale-105 active:scale-95 shadow-sm">
+                                <ListFilter className="mr-2 h-5 w-5" /> Todos os Chamados
+                            </Button>
+                        </Link>
+                    )}
                     <Link href="/dashboard/novo">
                         <Button variant="outline" className="h-11 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-800 font-extrabold transition-all hover:scale-105 active:scale-95 shadow-sm">
                             <PlusCircle className="mr-2 h-5 w-5" /> Novo Chamado
@@ -122,113 +142,285 @@ export default async function DashboardPage({
                 </div>
             </div>
 
-            <Filters categoriasDisponiveis={categoriasList} />
+            {/* Filtros apenas para usuários comuns */}
+            {!isAdminOrSupport && <Filters categoriasDisponiveis={categoriasList} />}
 
-            <Card className="shadow-sm border-slate-200 dark:border-slate-800">
-                <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b pb-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle className="text-lg">
-                                {isAdminOrSupport ? "Todos os Chamados" : "Meus Chamados"}
-                            </CardTitle>
-                            <CardTitle className="text-xs mt-1 text-slate-500 font-normal">
-                                Exibindo {tickets.length} chamados no total.
-                            </CardTitle>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                    <div className="overflow-x-auto">
-                        <Table>
-                            <TableHeader className="bg-slate-50 dark:bg-slate-900">
-                                <TableRow>
-                                    <TableHead className="hidden md:table-cell w-[100px]">ID</TableHead>
-                                    <TableHead>Título</TableHead>
-                                    <TableHead className="hidden md:table-cell">Categoria</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead className="hidden md:table-cell">Prioridade</TableHead>
-                                    {isAdminOrSupport && <TableHead className="hidden md:table-cell">Solicitante</TableHead>}
-                                    <TableHead className="hidden md:table-cell">Responsável</TableHead>
-                                    <TableHead className="text-right">Ação</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {tickets.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={isAdminOrSupport ? 8 : 7} className="h-24 justify-center text-center">
-                                            <div className="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
-                                                <Search className="h-8 w-8 mb-2 opacity-20" />
-                                                <p>Nenhum chamado encontrado.</p>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ) : (
-                                    tickets.map((ticket: any) => (
-                                        <TableRow key={ticket.id} className="hover:bg-slate-50/50 dark:bg-slate-900/50 transition-colors">
-                                            <TableCell className="hidden md:table-cell font-mono text-xs text-slate-500 dark:text-slate-400">
-                                                <div className="font-semibold text-slate-700 dark:text-slate-300">#{ticket.id.substring(ticket.id.length - 6).toUpperCase()}</div>
-                                                <div className="text-[10px] whitespace-nowrap opacity-75">{timeAgo(ticket.createdAt)}</div>
-                                            </TableCell>
-                                            <TableCell className="font-medium max-w-[200px] truncate" title={ticket.titulo}>
-                                                {ticket.titulo}
-                                            </TableCell>
-                                            <TableCell className="hidden md:table-cell text-slate-600 dark:text-slate-400 text-sm">
-                                                {ticket.categoria}
-                                            </TableCell>
-                                            <TableCell>
-                                                {ticket.encerradoPeloAutor ? (
-                                                    <Badge className="bg-emerald-700 hover:bg-emerald-800 text-white">Encerrado pelo Autor</Badge>
-                                                ) : (
-                                                    <div className="flex flex-col gap-1">
-                                                        {renderStatusBadge(ticket.status)}
-                                                        {ticket.status === "ABERTO" && (new Date().getTime() - new Date(ticket.createdAt).getTime() > delayAssuncaoLimit) && (
-                                                            <Badge variant="destructive" className="text-[10px] py-0 px-1 h-4 whitespace-nowrap">⏳ SLA ATRASADO</Badge>
-                                                        )}
-                                                        {(ticket.status === "EM_ANDAMENTO" || ticket.status === "AGUARDANDO_USUARIO" || ticket.status === "PENDENTE_USUARIO") && (new Date().getTime() - new Date(ticket.createdAt).getTime() > delayConclusaoLimit) && (
-                                                            <Badge variant="destructive" className="text-[10px] py-0 px-1 h-4 whitespace-nowrap">🚨 SLA ATRASADO</Badge>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </TableCell>
-                                            <TableCell className="hidden md:table-cell">
-                                                {renderPriorityBadge(ticket.prioridade)}
-                                            </TableCell>
-                                            {isAdminOrSupport && (
-                                                <TableCell className="hidden md:table-cell text-sm">
-                                                    <div className="flex flex-col">
-                                                        <span className="font-medium" title={ticket.solicitante?.email}>
-                                                            {ticket.solicitante?.name || "Desconhecido"}
-                                                        </span>
-                                                        {ticket.solicitante?.funcao && (
-                                                            <span className="text-[10px] text-slate-500 font-bold uppercase truncate max-w-[120px]">
-                                                                {ticket.solicitante.funcao}
-                                                            </span>
-                                                        )}
+            {/* Visão focada para técnicos: duas seções separadas */}
+            {isAdminOrSupport ? (
+                <>
+                    {/* Seção 1: Chamados Abertos */}
+                    <Card className="shadow-sm border-blue-200 dark:border-blue-900/50">
+                        <CardHeader className="bg-blue-50/50 dark:bg-blue-950/20 border-b border-blue-200 dark:border-blue-900/50 pb-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle className="text-lg text-blue-700 dark:text-blue-400">
+                                        📋 Chamados Abertos
+                                    </CardTitle>
+                                    <CardTitle className="text-xs mt-1 text-blue-500/70 dark:text-blue-400/60 font-normal">
+                                        {ticketsAbertos.length === 0
+                                            ? "Nenhum chamado na fila de espera."
+                                            : `${ticketsAbertos.length} chamado${ticketsAbertos.length > 1 ? "s" : ""} aguardando atendimento.`}
+                                    </CardTitle>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <div className="overflow-x-auto">
+                                <Table>
+                                    <TableHeader className="bg-blue-50/30 dark:bg-blue-950/10">
+                                        <TableRow>
+                                            <TableHead className="hidden md:table-cell w-[100px]">ID</TableHead>
+                                            <TableHead>Título</TableHead>
+                                            <TableHead className="hidden md:table-cell">Categoria</TableHead>
+                                            <TableHead>Status</TableHead>
+                                            <TableHead className="hidden md:table-cell">Prioridade</TableHead>
+                                            <TableHead className="hidden md:table-cell">Solicitante</TableHead>
+                                            <TableHead className="text-right">Ação</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {ticketsAbertos.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={7} className="h-20 justify-center text-center">
+                                                    <div className="flex flex-col items-center justify-center text-slate-400">
+                                                        <p className="text-sm">🎉 Fila vazia! Todos os chamados foram atendidos.</p>
                                                     </div>
                                                 </TableCell>
-                                            )}
-                                            <TableCell className="hidden md:table-cell text-sm text-slate-600 dark:text-slate-400">
-                                                {ticket.encerradoPeloAutor ? (
-                                                    <span className="text-emerald-700 dark:text-emerald-500 font-semibold italic">Encerrado pelo Autor</span>
-                                                ) : ticket.responsavel ? ticket.responsavel.name : (
-                                                    <span className="text-slate-400 italic">Não atribuído</span>
-                                                )}
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <Link href={`/dashboard/ticket/${ticket.id}`}>
-                                                    <Button variant="outline" size="sm" className="h-8 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900 bg-indigo-50/50 dark:bg-indigo-950/20 hover:bg-indigo-100 dark:hover:bg-indigo-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm px-3">
-                                                        Abrir
-                                                    </Button>
-                                                </Link>
+                                            </TableRow>
+                                        ) : (
+                                            ticketsAbertos.map((ticket: any) => (
+                                                <TableRow key={ticket.id} className="hover:bg-blue-50/30 dark:hover:bg-blue-950/10 transition-colors">
+                                                    <TableCell className="hidden md:table-cell font-mono text-xs text-slate-500 dark:text-slate-400">
+                                                        <div className="font-semibold text-slate-700 dark:text-slate-300">#{ticket.id.substring(ticket.id.length - 6).toUpperCase()}</div>
+                                                        <div className="text-[10px] whitespace-nowrap opacity-75">{timeAgo(ticket.createdAt)}</div>
+                                                    </TableCell>
+                                                    <TableCell className="font-medium max-w-[200px] truncate" title={ticket.titulo}>
+                                                        {ticket.titulo}
+                                                    </TableCell>
+                                                    <TableCell className="hidden md:table-cell text-slate-600 dark:text-slate-400 text-sm">
+                                                        {ticket.categoria}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex flex-col gap-1">
+                                                            {renderStatusBadge(ticket.status)}
+                                                            {(new Date().getTime() - new Date(ticket.createdAt).getTime() > delayAssuncaoLimit) && (
+                                                                <Badge variant="destructive" className="text-[10px] py-0 px-1 h-4 whitespace-nowrap">⏳ SLA ATRASADO</Badge>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="hidden md:table-cell">
+                                                        {renderPriorityBadge(ticket.prioridade)}
+                                                    </TableCell>
+                                                    <TableCell className="hidden md:table-cell text-sm">
+                                                        <div className="flex flex-col">
+                                                            <span className="font-medium" title={ticket.solicitante?.email}>
+                                                                {ticket.solicitante?.name || "Desconhecido"}
+                                                            </span>
+                                                            {ticket.solicitante?.funcao && (
+                                                                <span className="text-[10px] text-slate-500 font-bold uppercase truncate max-w-[120px]">
+                                                                    {ticket.solicitante.funcao}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Link href={`/dashboard/ticket/${ticket.id}`}>
+                                                            <Button variant="outline" size="sm" className="h-8 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900 bg-indigo-50/50 dark:bg-indigo-950/20 hover:bg-indigo-100 dark:hover:bg-indigo-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm px-3">
+                                                                Abrir
+                                                            </Button>
+                                                        </Link>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Seção 2: Meus Atendimentos */}
+                    <Card className="shadow-sm border-amber-200 dark:border-amber-900/50">
+                        <CardHeader className="bg-amber-50/50 dark:bg-amber-950/20 border-b border-amber-200 dark:border-amber-900/50 pb-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle className="text-lg text-amber-700 dark:text-amber-400">
+                                        🔧 Meus Atendimentos
+                                    </CardTitle>
+                                    <CardTitle className="text-xs mt-1 text-amber-500/70 dark:text-amber-400/60 font-normal">
+                                        {ticketsMeus.length === 0
+                                            ? "Nenhum chamado sob sua responsabilidade."
+                                            : `${ticketsMeus.length} chamado${ticketsMeus.length > 1 ? "s" : ""} que você está resolvendo.`}
+                                    </CardTitle>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <div className="overflow-x-auto">
+                                <Table>
+                                    <TableHeader className="bg-amber-50/30 dark:bg-amber-950/10">
+                                        <TableRow>
+                                            <TableHead className="hidden md:table-cell w-[100px]">ID</TableHead>
+                                            <TableHead>Título</TableHead>
+                                            <TableHead className="hidden md:table-cell">Categoria</TableHead>
+                                            <TableHead>Status</TableHead>
+                                            <TableHead className="hidden md:table-cell">Prioridade</TableHead>
+                                            <TableHead className="hidden md:table-cell">Solicitante</TableHead>
+                                            <TableHead className="text-right">Ação</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {ticketsMeus.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={7} className="h-20 justify-center text-center">
+                                                    <div className="flex flex-col items-center justify-center text-slate-400">
+                                                        <p className="text-sm">Nenhum chamado atribuído a você no momento.</p>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            ticketsMeus.map((ticket: any) => (
+                                                <TableRow key={ticket.id} className="hover:bg-amber-50/30 dark:hover:bg-amber-950/10 transition-colors">
+                                                    <TableCell className="hidden md:table-cell font-mono text-xs text-slate-500 dark:text-slate-400">
+                                                        <div className="font-semibold text-slate-700 dark:text-slate-300">#{ticket.id.substring(ticket.id.length - 6).toUpperCase()}</div>
+                                                        <div className="text-[10px] whitespace-nowrap opacity-75">{timeAgo(ticket.createdAt)}</div>
+                                                    </TableCell>
+                                                    <TableCell className="font-medium max-w-[200px] truncate" title={ticket.titulo}>
+                                                        {ticket.titulo}
+                                                    </TableCell>
+                                                    <TableCell className="hidden md:table-cell text-slate-600 dark:text-slate-400 text-sm">
+                                                        {ticket.categoria}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex flex-col gap-1">
+                                                            {renderStatusBadge(ticket.status)}
+                                                            {(ticket.status === "EM_ANDAMENTO" || ticket.status === "AGUARDANDO_USUARIO" || ticket.status === "PENDENTE_USUARIO") && (new Date().getTime() - new Date(ticket.createdAt).getTime() > delayConclusaoLimit) && (
+                                                                <Badge variant="destructive" className="text-[10px] py-0 px-1 h-4 whitespace-nowrap">🚨 SLA ATRASADO</Badge>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="hidden md:table-cell">
+                                                        {renderPriorityBadge(ticket.prioridade)}
+                                                    </TableCell>
+                                                    <TableCell className="hidden md:table-cell text-sm">
+                                                        <div className="flex flex-col">
+                                                            <span className="font-medium" title={ticket.solicitante?.email}>
+                                                                {ticket.solicitante?.name || "Desconhecido"}
+                                                            </span>
+                                                            {ticket.solicitante?.funcao && (
+                                                                <span className="text-[10px] text-slate-500 font-bold uppercase truncate max-w-[120px]">
+                                                                    {ticket.solicitante.funcao}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Link href={`/dashboard/ticket/${ticket.id}`}>
+                                                            <Button variant="outline" size="sm" className="h-8 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900 bg-indigo-50/50 dark:bg-indigo-950/20 hover:bg-indigo-100 dark:hover:bg-indigo-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm px-3">
+                                                                Abrir
+                                                            </Button>
+                                                        </Link>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </>
+            ) : (
+                /* Visão original para usuários comuns */
+                <Card className="shadow-sm border-slate-200 dark:border-slate-800">
+                    <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b pb-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle className="text-lg">Meus Chamados</CardTitle>
+                                <CardTitle className="text-xs mt-1 text-slate-500 font-normal">
+                                    Exibindo {tickets.length} chamados no total.
+                                </CardTitle>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        <div className="overflow-x-auto">
+                            <Table>
+                                <TableHeader className="bg-slate-50 dark:bg-slate-900">
+                                    <TableRow>
+                                        <TableHead className="hidden md:table-cell w-[100px]">ID</TableHead>
+                                        <TableHead>Título</TableHead>
+                                        <TableHead className="hidden md:table-cell">Categoria</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead className="hidden md:table-cell">Prioridade</TableHead>
+                                        <TableHead className="hidden md:table-cell">Responsável</TableHead>
+                                        <TableHead className="text-right">Ação</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {tickets.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={7} className="h-24 justify-center text-center">
+                                                <div className="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
+                                                    <Search className="h-8 w-8 mb-2 opacity-20" />
+                                                    <p>Nenhum chamado encontrado.</p>
+                                                </div>
                                             </TableCell>
                                         </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
-                </CardContent>
-            </Card>
+                                    ) : (
+                                        tickets.map((ticket: any) => (
+                                            <TableRow key={ticket.id} className="hover:bg-slate-50/50 dark:bg-slate-900/50 transition-colors">
+                                                <TableCell className="hidden md:table-cell font-mono text-xs text-slate-500 dark:text-slate-400">
+                                                    <div className="font-semibold text-slate-700 dark:text-slate-300">#{ticket.id.substring(ticket.id.length - 6).toUpperCase()}</div>
+                                                    <div className="text-[10px] whitespace-nowrap opacity-75">{timeAgo(ticket.createdAt)}</div>
+                                                </TableCell>
+                                                <TableCell className="font-medium max-w-[200px] truncate" title={ticket.titulo}>
+                                                    {ticket.titulo}
+                                                </TableCell>
+                                                <TableCell className="hidden md:table-cell text-slate-600 dark:text-slate-400 text-sm">
+                                                    {ticket.categoria}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {ticket.encerradoPeloAutor ? (
+                                                        <Badge className="bg-emerald-700 hover:bg-emerald-800 text-white">Encerrado pelo Autor</Badge>
+                                                    ) : (
+                                                        <div className="flex flex-col gap-1">
+                                                            {renderStatusBadge(ticket.status)}
+                                                            {ticket.status === "ABERTO" && (new Date().getTime() - new Date(ticket.createdAt).getTime() > delayAssuncaoLimit) && (
+                                                                <Badge variant="destructive" className="text-[10px] py-0 px-1 h-4 whitespace-nowrap">⏳ SLA ATRASADO</Badge>
+                                                            )}
+                                                            {(ticket.status === "EM_ANDAMENTO" || ticket.status === "AGUARDANDO_USUARIO" || ticket.status === "PENDENTE_USUARIO") && (new Date().getTime() - new Date(ticket.createdAt).getTime() > delayConclusaoLimit) && (
+                                                                <Badge variant="destructive" className="text-[10px] py-0 px-1 h-4 whitespace-nowrap">🚨 SLA ATRASADO</Badge>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell className="hidden md:table-cell">
+                                                    {renderPriorityBadge(ticket.prioridade)}
+                                                </TableCell>
+                                                <TableCell className="hidden md:table-cell text-sm text-slate-600 dark:text-slate-400">
+                                                    {ticket.encerradoPeloAutor ? (
+                                                        <span className="text-emerald-700 dark:text-emerald-500 font-semibold italic">Encerrado pelo Autor</span>
+                                                    ) : ticket.responsavel ? ticket.responsavel.name : (
+                                                        <span className="text-slate-400 italic">Não atribuído</span>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <Link href={`/dashboard/ticket/${ticket.id}`}>
+                                                        <Button variant="outline" size="sm" className="h-8 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900 bg-indigo-50/50 dark:bg-indigo-950/20 hover:bg-indigo-100 dark:hover:bg-indigo-900 font-bold transition-all hover:scale-105 active:scale-95 shadow-sm px-3">
+                                                            Abrir
+                                                        </Button>
+                                                    </Link>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
         </div>
     );
 }

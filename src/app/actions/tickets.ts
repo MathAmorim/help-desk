@@ -189,6 +189,40 @@ export async function getAllTickets(filters?: TicketFilters) {
     });
 }
 
+export async function getFocusedTickets() {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user || (session.user.role !== "SUPORTE" && session.user.role !== "ADMIN")) {
+        throw new Error("Não autorizado para ver chamados focados");
+    }
+
+    return prisma.ticket.findMany({
+        where: {
+            OR: [
+                // Chamados abertos (fila de espera geral)
+                { status: "ABERTO" },
+                // Chamados que o técnico assumiu e ainda não finalizou
+                {
+                    responsavelId: session.user.id,
+                    status: { notIn: ["RESOLVIDO", "FECHADO"] }
+                }
+            ]
+        },
+        orderBy: [
+            { status: "asc" },     // ABERTO (A) vem antes de EM_ANDAMENTO (E)
+            { createdAt: "asc" }   // Mais velhos no topo
+        ],
+        include: {
+            solicitante: {
+                select: { name: true, email: true, role: true, funcao: true },
+            },
+            responsavel: {
+                select: { name: true },
+            },
+        },
+    });
+}
+
 export async function getTicketById(id: string) {
     const session = await getServerSession(authOptions);
     if (!session || !session.user) throw new Error("Não autorizado");

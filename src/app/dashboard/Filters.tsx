@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Search, X, Clock, AlertCircle } from "lucide-react";
 
-export function Filters({ categoriasDisponiveis }: { categoriasDisponiveis: string[] }) {
+export function Filters({ categoriasDisponiveis, basePath = "/dashboard" }: { categoriasDisponiveis: string[]; basePath?: string }) {
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -36,7 +36,7 @@ export function Filters({ categoriasDisponiveis }: { categoriasDisponiveis: stri
         if (newCategoria && newCategoria !== "TODOS") params.set("categoria", newCategoria); else params.delete("categoria");
         if (newAtrasado) params.set("atrasado", "true"); else params.delete("atrasado");
 
-        router.push(`/dashboard?${params.toString()}`);
+        router.push(`${basePath}?${params.toString()}`);
     }, [router, searchParams]);
 
     // Busca em tempo real com debounce
@@ -60,7 +60,7 @@ export function Filters({ categoriasDisponiveis }: { categoriasDisponiveis: stri
         setStatus("TODOS");
         setCategoria("TODOS");
         setAtrasado(false);
-        router.push("/dashboard");
+        router.push(basePath);
     };
 
     return (
