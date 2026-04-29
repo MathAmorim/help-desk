@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "restore": "tsx scripts/restore.ts",
-    "backup": "tsx scripts/backup.ts"
+    "backup": "tsx scripts/backup.ts",
+    "db:dev": "node -e \"const f=require('fs');const p='prisma/schema.prisma';f.writeFileSync(p,f.readFileSync(p,'utf8').replace(/provider = \\\"postgresql\\\"/,'provider = \\\"sqlite\\\"'))\" && npx prisma generate && echo Provider alterado para SQLite (dev)",
+    "db:prod": "node -e \"const f=require('fs');const p='prisma/schema.prisma';f.writeFileSync(p,f.readFileSync(p,'utf8').replace(/provider = \\\"sqlite\\\"/,'provider = \\\"postgresql\\\"'))\" && npx prisma generate && echo Provider alterado para PostgreSQL (prod)"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
