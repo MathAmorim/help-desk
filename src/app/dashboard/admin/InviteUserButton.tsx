@@ -101,14 +101,16 @@ export default function InviteUserButton() {
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button onClick={handleGenerate} variant="outline" className="w-full h-10 border-sky-200 dark:border-sky-800 text-sky-600 dark:text-sky-400 bg-sky-50/50 dark:bg-sky-950/20 hover:bg-sky-100 dark:hover:bg-sky-900 font-extrabold transition-all shadow-sm">
-                    <div className="flex items-center justify-center">
-                        <Link2 className="mr-2 h-5 w-5 shrink-0" /> 
-                        <span>Convidar<span className="hidden sm:inline ml-1">Usuário</span></span>
-                    </div>
-                </Button>
-            </DialogTrigger>
+            <DialogTrigger 
+                render={
+                    <Button onClick={handleGenerate} variant="outline" className="w-full h-10 border-sky-200 dark:border-sky-800 text-sky-600 dark:text-sky-400 bg-sky-50/50 dark:bg-sky-950/20 hover:bg-sky-100 dark:hover:bg-sky-900 font-extrabold transition-all shadow-sm">
+                        <div className="flex items-center justify-center">
+                            <Link2 className="mr-2 h-5 w-5 shrink-0" /> 
+                            <span>Convidar<span className="hidden sm:inline ml-1">Usuário</span></span>
+                        </div>
+                    </Button>
+                }
+            />
             <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col p-0 overflow-hidden">
                 <DialogHeader className="p-6 pb-0">
                     <DialogTitle className="flex items-center gap-2">
