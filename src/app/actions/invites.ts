@@ -152,6 +152,46 @@ export async function registerWithInvite(token: string, data: any, clientIp: str
     }
 }
 
+export async function getInvites() {
+    const session = await getServerSession(authOptions);
+    if (!session || (session.user.role !== "ADMIN" && session.user.role !== "SUPORTE")) {
+        throw new Error("Não autorizado");
+    }
+
+    // Busca os convites sem o include (pois a relação não existe no schema)
+    const invites = await (prisma.inviteToken as any).findMany({
+        orderBy: { createdAt: "desc" }
+    });
+
+    // Para cada convite usado, busca o usuário manualmente
+    const invitesWithUsers = await Promise.all(invites.map(async (inv: any) => {
+        if (inv.used && inv.usedById) {
+            const user = await prisma.user.findUnique({
+                where: { id: inv.usedById },
+                select: { name: true, email: true }
+            });
+            return { ...inv, usedBy: user };
+        }
+        return { ...inv, usedBy: null };
+    }));
+
+    return invitesWithUsers;
+}
+
+export async function revokeInvite(id: string) {
+    const session = await getServerSession(authOptions);
+    if (!session || (session.user.role !== "ADMIN" && session.user.role !== "SUPORTE")) {
+        throw new Error("Não autorizado");
+    }
+
+    await (prisma.inviteToken as any).delete({
+        where: { id }
+    });
+
+    revalidatePath("/dashboard/admin");
+    return { success: true };
+}
+
 export async function getExistingSectors() {
     const usersWithSectors = await (prisma.user as any).findMany({
         where: { setor: { not: null } },
