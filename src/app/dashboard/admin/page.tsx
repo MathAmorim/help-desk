@@ -67,7 +67,8 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
         where,
         orderBy: { [sortBy]: order }
     });
-    return (
+
+    return (
         <div className="space-y-6 px-2 sm:px-0">
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                 <div className="w-full lg:w-auto">
@@ -162,7 +163,6 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
                                                     </span>
                                                     <div className="flex flex-col sm:flex-row sm:items-center gap-1 mt-0.5 text-[11px] sm:text-xs text-slate-500 font-medium">
                                                         <span className="truncate max-w-[150px]">{user.funcao || "Sem função"}</span>
-                                                        <span className="hidden sm:inline text-slate-300">•</span>
                                                         <span className="md:hidden text-indigo-600/70 dark:text-indigo-400/70">{user.setor || "Sem setor"}</span>
                                                         <span className="sm:hidden text-slate-400 lowercase">{user.email || ""}</span>
                                                     </div>

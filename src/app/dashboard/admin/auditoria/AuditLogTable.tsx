@@ -3,6 +3,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ChevronLeft, ChevronRight, Hash, User, Activity, Clock, Info, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
@@ -99,8 +100,52 @@ export default function AuditLogTable({ logs, total, page, totalPages, onPageCha
                                         <span className="text-slate-400 font-mono text-xs">-</span>
                                     )}
                                 </TableCell>
-                                <TableCell className="text-sm text-slate-600 dark:text-slate-400 max-w-md truncate" title={log.detalhes}>
-                                    {log.detalhes}
+                                <TableCell className="py-3 min-w-[300px]">
+                                    <div className="flex items-start justify-between gap-2 group/cell">
+                                        <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 break-all whitespace-normal leading-relaxed">
+                                            {log.detalhes}
+                                        </div>
+                                        <Dialog>
+                                            <DialogTrigger render={
+                                                <Button size="icon-sm" variant="ghost" className="h-7 w-7 shrink-0 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 transition-colors">
+                                                    <Info className="h-4 w-4" />
+                                                </Button>
+                                            } />
+                                            <DialogContent className="sm:max-w-[600px]">
+                                                <DialogHeader>
+                                                    <DialogTitle className="flex items-center gap-2">
+                                                        <Activity className="h-5 w-5 text-indigo-500" />
+                                                        Detalhes da Operação
+                                                    </DialogTitle>
+                                                </DialogHeader>
+                                                <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
+                                                    <div className="flex flex-col gap-4">
+                                                        <div className="grid grid-cols-2 gap-4 text-xs">
+                                                            <div>
+                                                                <span className="block text-slate-400 uppercase font-bold mb-1">Data e Hora</span>
+                                                                <span className="text-slate-700 dark:text-slate-300">
+                                                                    {new Intl.DateTimeFormat("pt-BR", { dateStyle: "full", timeStyle: "medium" }).format(new Date(log.createdAt))}
+                                                                </span>
+                                                            </div>
+                                                            <div>
+                                                                <span className="block text-slate-400 uppercase font-bold mb-1">Ação Executada</span>
+                                                                <Badge variant="outline" className={`${getActionColor(log.acao)} border-none text-[10px] uppercase font-black`}>
+                                                                    {log.acao.replace("_", " ")}
+                                                                </Badge>
+                                                            </div>
+                                                        </div>
+                                                        <div className="h-px bg-slate-200 dark:bg-slate-800" />
+                                                        <div>
+                                                            <span className="block text-slate-400 uppercase font-bold mb-1 text-xs">Conteúdo do Log</span>
+                                                            <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap break-words leading-relaxed font-mono bg-white dark:bg-slate-900 p-3 rounded border">
+                                                                {log.detalhes}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </DialogContent>
+                                        </Dialog>
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         ))}

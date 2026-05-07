@@ -34,7 +34,7 @@ export default function RegisterForm({ token, sectors }: { token: string; sector
             ) : (
                 <X className="h-3 w-3 text-slate-300" />
             )}
-            <span className={valid ? "text-slate-700 dark:text-slate-300 font-medium" : "text-slate-400"}>{text}</span>
+            <span className={valid ? "text-slate-700 font-medium" : "text-slate-400"}>{text}</span>
         </div>
     );
 
@@ -67,14 +67,17 @@ export default function RegisterForm({ token, sectors }: { token: string; sector
 
         try {
             const result = await registerWithInvite(token, data);
+            
             if (result.success) {
                 setSuccess(true);
                 setTimeout(() => {
                     router.push("/login");
                 }, 3000);
+            } else {
+                setError(result.error || "Ocorreu um erro ao processar seu cadastro.");
             }
         } catch (err: any) {
-            setError(err.message || "Erro ao realizar cadastro.");
+            setError("Erro de conexão com o servidor. Por favor, verifique sua internet.");
         } finally {
             setIsPending(false);
         }

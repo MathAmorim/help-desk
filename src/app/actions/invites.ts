@@ -50,37 +50,37 @@ export async function validateInviteToken(token: string) {
 }
 
 export async function registerWithInvite(token: string, data: any, clientIp: string = "unknown") {
-    // 1. Rate Limit
-    const isAllowed = checkRateLimitIp(clientIp, 3, 60 * 1000); // 3 tentativas por minuto
-    if (!isAllowed) {
-        throw new Error("Muitas tentativas. Por favor, aguarde um momento.");
-    }
-
-    // 2. Validar Token novamente no servidor
-    const invite = await (prisma.inviteToken as any).findUnique({
-        where: { token }
-    });
-
-    if (!invite || invite.used || new Date() > invite.expiresAt) {
-        throw new Error("O link de cadastro não é mais válido.");
-    }
-
-    const { name, email, cpf, password, funcao, setor } = data;
-
-    // 3. Limpar e validar CPF
-    const cleanedCpf = (cpf || "").replace(/\D/g, '');
-    if (cleanedCpf.length !== 11) {
-        throw new Error("O CPF informado deve conter 11 dígitos numéricos.");
-    }
-
     try {
+        // 1. Rate Limit
+        const isAllowed = checkRateLimitIp(clientIp, 5, 60 * 1000); // 5 tentativas por minuto
+        if (!isAllowed) {
+            return { success: false, error: "Muitas tentativas. Por favor, aguarde um momento." };
+        }
+
+        // 2. Validar Token novamente no servidor
+        const invite = await (prisma.inviteToken as any).findUnique({
+            where: { token }
+        });
+
+        if (!invite || invite.used || new Date() > invite.expiresAt) {
+            return { success: false, error: "O link de cadastro não é mais válido ou já expirou." };
+        }
+
+        const { name, email, cpf, password, funcao, setor } = data;
+
+        // 3. Limpar e validar CPF
+        const cleanedCpf = (cpf || "").replace(/\D/g, '');
+        if (cleanedCpf.length !== 11) {
+            return { success: false, error: "O CPF informado deve conter 11 dígitos numéricos." };
+        }
+
         // 4. Verificar duplicidade de CPF
         const existingCpf = await prisma.user.findUnique({
             where: { cpf: cleanedCpf }
         });
 
         if (existingCpf) {
-            throw new Error("Este CPF já está cadastrado no sistema.");
+            return { success: false, error: "Este CPF já está cadastrado no sistema." };
         }
 
         // 4.1 Verificar duplicidade de E-mail (se fornecido)
@@ -90,7 +90,7 @@ export async function registerWithInvite(token: string, data: any, clientIp: str
             });
 
             if (existingEmail) {
-                throw new Error("Este e-mail já está cadastrado no sistema.");
+                return { success: false, error: "Este e-mail já está cadastrado no sistema." };
             }
         }
 
@@ -125,7 +125,7 @@ export async function registerWithInvite(token: string, data: any, clientIp: str
             return newUser;
         });
 
-        // 7. Auditoria
+        // 7. Auditoria Sucesso
         await (prisma.auditLog as any).create({
             data: {
                 acao: "AUTO_CADASTRO_CONVITE",
@@ -147,8 +147,11 @@ export async function registerWithInvite(token: string, data: any, clientIp: str
             }
         });
 
-        // Retornar erro genérico com código para o usuário
-        throw new Error(`Não foi possível concluir o cadastro. Por favor, entre em contato com o suporte e informe o código: ${errorCode}`);
+        // Retornar erro estruturado em vez de throw
+        return { 
+            success: false, 
+            error: `Não foi possível concluir o cadastro técnico. Por favor, tente novamente ou informe o código ${errorCode} ao suporte.` 
+        };
     }
 }
 
