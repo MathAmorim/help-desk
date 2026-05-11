@@ -35,10 +35,14 @@ export default function NewUserButton({ sectors = [] }: { sectors?: string[] }) 
 
         try {
             const result = await createUser({ name, email, role, cpf, funcao, setor });
-            setGeneratedPassword(result.tempPassword);
-            setGeneratedCpf(cpf);
+            if (result.success) {
+                setGeneratedPassword(result.tempPassword!);
+                setGeneratedCpf(cpf);
+            } else {
+                setError(result.error || "Erro ao criar usuário.");
+            }
         } catch (err: any) {
-            setError(err.message || "Ocorreu um erro ao criar usuário.");
+            setError("Erro de comunicação com o servidor.");
         } finally {
             setIsPending(false);
         }

@@ -19,10 +19,27 @@ export async function initCron() {
     }
   });
 
+  // Notificação de 1 dia de antecedência (Diário às 07:00)
+  cron.schedule("0 7 * * *", async () => {
+    try {
+      await processDailyAppointmentReminders();
+    } catch (e) {
+      console.error("[CRON] Erro no reminder diário de agendamentos:", e);
+    }
+  });
+
+  // Notificação de 30 minutos (A cada 10 minutos)
+  cron.schedule("*/10 * * * *", async () => {
+    try {
+      await processImminentAppointmentReminders();
+    } catch (e) {
+      console.error("[CRON] Erro no reminder de agendamentos iminentes:", e);
+    }
+  });
+
   // Execução imediata de sanidade ao subir o servidor (opcional)
   // await processAutoClose(); 
 }
-
 async function processSLA() {
     // 1. Carregar configurações
     let settings = await prisma.setting.findUnique({ where: { id: "global" } });
@@ -130,5 +147,90 @@ async function processAutoClose() {
         } catch (e) {
             console.error(`[CRON] Erro ao fechar ticket ${t.id}:`, e);
         }
+    }
+}
+
+async function processDailyAppointmentReminders() {
+    const tomorrowStart = new Date();
+    tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+    tomorrowStart.setHours(0, 0, 0, 0);
+
+    const tomorrowEnd = new Date(tomorrowStart);
+    tomorrowEnd.setHours(23, 59, 59, 999);
+
+    const appointments = await prisma.appointment.findMany({
+        where: {
+            status: { in: ["PENDING", "CONFIRMED"] },
+            startTime: { gte: tomorrowStart, lte: tomorrowEnd },
+            notified1Day: false
+        },
+        include: { technicians: true }
+    });
+
+    if (appointments.length === 0) return;
+
+    for (const app of appointments) {
+        if (app.technicians.length === 0) continue;
+
+        const timeStr = app.startTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        
+        await prisma.$transaction(async (tx) => {
+            // Criar notificações para cada técnico
+            for (const tech of app.technicians) {
+                await tx.notification.create({
+                    data: {
+                        mensagem: `📅 Lembrete: Você possui o serviço "${app.title}" amanhã às ${timeStr}.`,
+                        userId: tech.id,
+                        link: `/dashboard/agendamentos`
+                    }
+                });
+            }
+
+            // Marcar como notificado
+            await tx.appointment.update({
+                where: { id: app.id },
+                data: { notified1Day: true }
+            });
+        });
+    }
+}
+
+async function processImminentAppointmentReminders() {
+    const now = new Date();
+    const targetTime = new Date(now.getTime() + 40 * 60 * 1000); // Até 40 min no futuro
+    const pastLimit = new Date(now.getTime() - 10 * 60 * 1000); // Até 10 min no passado
+
+    const appointments = await prisma.appointment.findMany({
+        where: {
+            status: { in: ["PENDING", "CONFIRMED"] },
+            startTime: { gt: pastLimit, lte: targetTime },
+            notified30Min: false
+        },
+        include: { technicians: true }
+    });
+
+    if (appointments.length === 0) return;
+
+    for (const app of appointments) {
+        if (app.technicians.length === 0) continue;
+
+        const timeStr = app.startTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        
+        await prisma.$transaction(async (tx) => {
+            for (const tech of app.technicians) {
+                await tx.notification.create({
+                    data: {
+                        mensagem: `⏳ Atenção: O serviço "${app.title}" começará em breve (${timeStr})!`,
+                        userId: tech.id,
+                        link: `/dashboard/agendamentos`
+                    }
+                });
+            }
+
+            await tx.appointment.update({
+                where: { id: app.id },
+                data: { notified30Min: true }
+            });
+        });
     }
 }

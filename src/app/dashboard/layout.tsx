@@ -69,6 +69,9 @@ export default async function DashboardLayout({
                                 <Link href="/dashboard/categorias" className="px-3 py-1.5 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100/50 dark:hover:bg-indigo-900/30 rounded-md transition-colors whitespace-nowrap">
                                     Categorias
                                 </Link>
+                                <Link href="/dashboard/agendamentos" className="px-3 py-1.5 text-sm font-semibold text-violet-600 dark:text-violet-400 hover:bg-violet-100/50 dark:hover:bg-violet-900/30 rounded-md transition-colors whitespace-nowrap">
+                                    Agendamentos
+                                </Link>
                                 <Link href="/dashboard/relatorios" className="px-3 py-1.5 text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/30 rounded-md transition-colors whitespace-nowrap">
                                     Relatórios
                                 </Link>

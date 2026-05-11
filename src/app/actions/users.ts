@@ -28,211 +28,263 @@ function generateRandomPassword() {
 }
 
 export async function createUser(data: { name: string; email?: string; role: string; cpf: string; funcao?: string; setor?: string }) {
-    const session = await getServerSession(authOptions);
+    try {
+        const session = await getServerSession(authOptions);
 
-    if (!session || session.user.role !== "ADMIN") {
-        throw new Error("Não autorizado");
-    }
-
-    const { name, email, role, cpf, funcao, setor } = data;
-
-    // Limpa o CPF
-    const cleanedCpf = cpf.replace(/\D/g, '');
-
-    if (cleanedCpf.length !== 11) {
-        throw new Error("CPF deve conter 11 dígitos.");
-    }
-
-    const whereConditions: any[] = [{ cpf: cleanedCpf }];
-    if (email) {
-        whereConditions.push({ email });
-    }
-
-    const existingUser = await prisma.user.findFirst({
-        where: {
-            OR: whereConditions
-        },
-    });
-
-    if (existingUser) {
-        if (existingUser.email && existingUser.email === email) {
-            throw new Error("E-mail já está em uso por outro usuário.");
+        if (!session || session.user.role !== "ADMIN") {
+            return { success: false, error: "Não autorizado" };
         }
-        if (existingUser.cpf === cleanedCpf) {
-            throw new Error("CPF já está em uso por outro usuário.");
+
+        const { name, email, role, cpf, funcao, setor } = data;
+
+        // Limpa o CPF
+        const cleanedCpf = cpf.replace(/\D/g, '');
+
+        if (cleanedCpf.length !== 11) {
+            return { success: false, error: "O CPF deve conter exatamente 11 dígitos numéricos." };
         }
+
+        const whereConditions: any[] = [{ cpf: cleanedCpf }];
+        if (email) {
+            whereConditions.push({ email });
+        }
+
+        const existingUser = await prisma.user.findFirst({
+            where: {
+                OR: whereConditions
+            },
+        });
+
+        if (existingUser) {
+            if (existingUser.email && existingUser.email === email) {
+                return { success: false, error: "Este e-mail já está cadastrado no sistema." };
+            }
+            if (existingUser.cpf === cleanedCpf) {
+                return { success: false, error: "Este CPF já está cadastrado no sistema." };
+            }
+        }
+
+        const tempPassword = generateRandomPassword();
+        const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+        const user = await (prisma.user as any).create({
+            data: {
+                name,
+                email: (email || null) as any,
+                role,
+                cpf: cleanedCpf,
+                funcao: funcao || null,
+                setor: setor || null,
+                password: hashedPassword,
+                mustChangePassword: true,
+                searchVector: normalizeSearchText(`${name} ${email || ""} ${cleanedCpf} ${setor || ""} ${funcao || ""}`)
+            },
+        });
+
+        // Registrar Log de Auditoria
+        await (prisma.auditLog as any).create({
+            data: {
+                acao: "USUARIO_CRIADO",
+                detalhes: `Usuário ${name} (${cleanedCpf}) criado manualmente pelo administrador ${session.user.name}.`,
+                userId: session.user.id
+            }
+        });
+
+        revalidatePath("/dashboard/admin");
+
+        return {
+            success: true,
+            user,
+            tempPassword
+        };
+    } catch (error: any) {
+        console.error("Erro ao criar usuário:", error);
+        return { success: false, error: "Ocorreu um erro técnico ao criar o usuário. Tente novamente mais tarde." };
     }
-
-    const tempPassword = generateRandomPassword();
-    const hashedPassword = await bcrypt.hash(tempPassword, 10);
-
-    const user = await (prisma.user as any).create({
-        data: {
-            name,
-            email: (email || null) as any,
-            role,
-            cpf: cleanedCpf,
-            funcao: funcao || null,
-            setor: setor || null,
-            password: hashedPassword,
-            mustChangePassword: true,
-            searchVector: normalizeSearchText(`${name} ${email || ""} ${cleanedCpf} ${setor || ""} ${funcao || ""}`)
-        },
-    });
-
-    revalidatePath("/dashboard/admin");
-
-    return {
-        success: true,
-        user,
-        tempPassword // Devolve só pro Admin ver na tela e copiar
-    };
 }
 
 export async function resetUserPassword(userId: string) {
-    const session = await getServerSession(authOptions);
+    try {
+        const session = await getServerSession(authOptions);
 
-    if (!session || session.user.role !== "ADMIN") {
-        throw new Error("Não autorizado");
+        if (!session || session.user.role !== "ADMIN") {
+            return { success: false, error: "Não autorizado" };
+        }
+
+        const tempPassword = generateRandomPassword();
+        const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+        const user = await prisma.user.update({
+            where: { id: userId },
+            data: {
+                password: hashedPassword,
+                mustChangePassword: true,
+            },
+        });
+
+        // Auditoria
+        await (prisma.auditLog as any).create({
+            data: {
+                acao: "SENHA_RESETADA",
+                detalhes: `Senha do usuário ${user.name} resetada pelo administrador ${session.user.name}.`,
+                userId: session.user.id
+            }
+        });
+
+        revalidatePath("/dashboard/admin");
+
+        return {
+            success: true,
+            tempPassword
+        };
+    } catch (error: any) {
+        console.error("Erro ao resetar senha:", error);
+        return { success: false, error: "Erro técnico ao resetar senha." };
     }
-
-    const tempPassword = generateRandomPassword();
-    const hashedPassword = await bcrypt.hash(tempPassword, 10);
-
-    const user = await prisma.user.update({
-        where: { id: userId },
-        data: {
-            password: hashedPassword,
-            mustChangePassword: true,
-        },
-    });
-
-    revalidatePath("/dashboard/admin");
-
-    return {
-        success: true,
-        tempPassword
-    };
 }
 
 export async function updateUser(data: { id: string; name: string; email?: string; role: string; cpf: string; funcao?: string; setor?: string }) {
-    const session = await getServerSession(authOptions);
+    try {
+        const session = await getServerSession(authOptions);
 
-    if (!session || session.user.role !== "ADMIN") {
-        throw new Error("Não autorizado");
-    }
-
-    const { id, name, email, role, cpf, funcao, setor } = data;
-
-    // Limpa o CPF
-    const cleanedCpf = cpf.replace(/\D/g, '');
-
-    if (cleanedCpf.length !== 11) {
-        throw new Error("CPF deve conter 11 dígitos.");
-    }
-
-    const whereConditions: any[] = [{ cpf: cleanedCpf }];
-    if (email) {
-        whereConditions.push({ email });
-    }
-
-    const existingUser = await prisma.user.findFirst({
-        where: {
-            id: { not: id },
-            OR: whereConditions
-        },
-    });
-
-    if (existingUser) {
-        if (existingUser.email && existingUser.email === email) {
-            throw new Error("E-mail já está em uso por outro usuário.");
+        if (!session || session.user.role !== "ADMIN") {
+            return { success: false, error: "Não autorizado" };
         }
-        if (existingUser.cpf === cleanedCpf) {
-            throw new Error("CPF já está em uso por outro usuário.");
+
+        const { id, name, email, role, cpf, funcao, setor } = data;
+
+        // Limpa o CPF
+        const cleanedCpf = cpf.replace(/\D/g, '');
+
+        if (cleanedCpf.length !== 11) {
+            return { success: false, error: "O CPF deve conter exatamente 11 dígitos numéricos." };
         }
+
+        const whereConditions: any[] = [{ cpf: cleanedCpf }];
+        if (email) {
+            whereConditions.push({ email });
+        }
+
+        const existingUser = await prisma.user.findFirst({
+            where: {
+                id: { not: id },
+                OR: whereConditions
+            },
+        });
+
+        if (existingUser) {
+            if (existingUser.email && existingUser.email === email) {
+                return { success: false, error: "Este e-mail já está cadastrado para outro usuário." };
+            }
+            if (existingUser.cpf === cleanedCpf) {
+                return { success: false, error: "Este CPF já está cadastrado para outro usuário." };
+            }
+        }
+
+        const user = await (prisma.user as any).update({
+            where: { id },
+            data: {
+                name,
+                email: (email || null) as any,
+                role,
+                cpf: cleanedCpf,
+                funcao: funcao || null,
+                setor: setor || null,
+                searchVector: normalizeSearchText(`${name} ${email || ""} ${cleanedCpf} ${setor || ""} ${funcao || ""}`)
+            },
+        });
+
+        // Auditoria
+        await (prisma.auditLog as any).create({
+            data: {
+                acao: "USUARIO_EDITADO",
+                detalhes: `Dados do usuário ${name} (${cleanedCpf}) atualizados pelo administrador ${session.user.name}.`,
+                userId: session.user.id
+            }
+        });
+
+        revalidatePath("/dashboard/admin");
+
+        return {
+            success: true,
+            user,
+        };
+    } catch (error: any) {
+        console.error("Erro ao atualizar usuário:", error);
+        return { success: false, error: "Erro técnico ao atualizar o usuário." };
     }
-
-    const user = await (prisma.user as any).update({
-        where: { id },
-        data: {
-            name,
-            email: (email || null) as any,
-            role,
-            cpf: cleanedCpf,
-            funcao: funcao || null,
-            setor: setor || null,
-            searchVector: normalizeSearchText(`${name} ${email || ""} ${cleanedCpf} ${setor || ""} ${funcao || ""}`)
-        },
-    });
-
-    revalidatePath("/dashboard/admin");
-
-    return {
-        success: true,
-        user,
-    };
 }
 
 export async function deactivateUser(userId: string) {
-    const session = await getServerSession(authOptions);
+    try {
+        const session = await getServerSession(authOptions);
 
-    if (!session || session.user.role !== "ADMIN") {
-        throw new Error("Não autorizado");
-    }
-
-    if (session.user.id === userId) {
-        throw new Error("Você não pode desativar sua própria conta.");
-    }
-
-    await prisma.user.update({
-        where: { id: userId },
-        data: {
-            ativo: false,
-            deletedAt: new Date()
-        } as any
-    });
-
-    // Registrar no Log de Auditoria
-    const targetUser = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
-    await (prisma.auditLog as any).create({
-        data: {
-            acao: "USUARIO_DESATIVADO",
-            detalhes: `Usuário [${targetUser?.name || userId}] foi desativado pelo administrador.`,
-            userId: session.user.id
+        if (!session || session.user.role !== "ADMIN") {
+            return { success: false, error: "Não autorizado" };
         }
-    });
 
-    revalidatePath("/dashboard/admin");
-    return { success: true };
+        if (session.user.id === userId) {
+            return { success: false, error: "Você não pode desativar sua própria conta." };
+        }
+
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                ativo: false,
+                deletedAt: new Date()
+            } as any
+        });
+
+        // Registrar no Log de Auditoria
+        const targetUser = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
+        await (prisma.auditLog as any).create({
+            data: {
+                acao: "USUARIO_DESATIVADO",
+                detalhes: `Usuário [${targetUser?.name || userId}] foi desativado pelo administrador.`,
+                userId: session.user.id
+            }
+        });
+
+        revalidatePath("/dashboard/admin");
+        return { success: true };
+    } catch (error: any) {
+        console.error("Erro ao desativar usuário:", error);
+        return { success: false, error: "Erro técnico ao desativar usuário." };
+    }
 }
 
 export async function reactivateUser(userId: string) {
-    const session = await getServerSession(authOptions);
+    try {
+        const session = await getServerSession(authOptions);
 
-    if (!session || session.user.role !== "ADMIN") {
-        throw new Error("Não autorizado");
-    }
-
-    await prisma.user.update({
-        where: { id: userId },
-        data: {
-            ativo: true,
-            deletedAt: null
-        } as any
-    });
-
-    // Registrar no Log de Auditoria
-    const targetUser = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
-    await (prisma.auditLog as any).create({
-        data: {
-            acao: "USUARIO_REATIVADO",
-            detalhes: `Usuário [${targetUser?.name || userId}] foi reativado pelo administrador.`,
-            userId: session.user.id
+        if (!session || session.user.role !== "ADMIN") {
+            return { success: false, error: "Não autorizado" };
         }
-    });
 
-    revalidatePath("/dashboard/admin");
-    return { success: true };
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                ativo: true,
+                deletedAt: null
+            } as any
+        });
+
+        // Registrar no Log de Auditoria
+        const targetUser = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
+        await (prisma.auditLog as any).create({
+            data: {
+                acao: "USUARIO_REATIVADO",
+                detalhes: `Usuário [${targetUser?.name || userId}] foi reativado pelo administrador.`,
+                userId: session.user.id
+            }
+        });
+
+        revalidatePath("/dashboard/admin");
+        return { success: true };
+    } catch (error: any) {
+        console.error("Erro ao reativar usuário:", error);
+        return { success: false, error: "Erro técnico ao reativar usuário." };
+    }
 }
 
 export async function exportUsersAction() {

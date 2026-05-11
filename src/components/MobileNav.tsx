@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X, Home, Shield, Tags, PieChart, Megaphone, User, ListFilter } from "lucide-react";
+import { Menu, X, Home, Shield, Tags, PieChart, Megaphone, User, ListFilter, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function MobileNav({ role }: { role: string }) {
@@ -46,6 +46,10 @@ export function MobileNav({ role }: { role: string }) {
                                 <Link href="/dashboard/categorias" onClick={closeMenu} className="flex items-center gap-3 text-lg font-bold p-3 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-400 rounded-xl hover:bg-indigo-100 transition-colors">
                                     <Tags className="h-5 w-5 opacity-80" />
                                     <span>Categorias</span>
+                                </Link>
+                                <Link href="/dashboard/agendamentos" onClick={closeMenu} className="flex items-center gap-3 text-lg font-bold p-3 bg-violet-50 dark:bg-violet-950/20 text-violet-700 dark:text-violet-400 rounded-xl hover:bg-violet-100 transition-colors">
+                                    <Clock className="h-5 w-5 opacity-80" />
+                                    <span>Agendamentos</span>
                                 </Link>
                                 <Link href="/dashboard/relatorios" onClick={closeMenu} className="flex items-center gap-3 text-lg font-bold p-3 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 rounded-xl hover:bg-emerald-100 transition-colors">
                                     <PieChart className="h-5 w-5 opacity-80" />

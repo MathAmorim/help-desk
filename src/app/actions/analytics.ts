@@ -46,16 +46,28 @@ export async function getDashboardMetrics(periodo: string) {
         }
     });
 
-    // Total Resolvidos (Resolvidos no periodo)
-    const totalResolvidos = await prisma.ticket.count({
+    // Agendamentos Concluídos no período
+    const completedAppointments = await prisma.appointment.findMany({
+        where: {
+            createdAt: createdAtFilter,
+            status: "COMPLETED"
+        },
+        include: {
+            technicians: { select: { id: true } }
+        }
+    });
+
+    // Total Resolvidos (Resolvidos no periodo + Agendamentos Concluídos)
+    const totalResolvidosTickets = await prisma.ticket.count({
         where: {
             ...whereClauseObj,
             status: "RESOLVIDO"
         }
     });
+    const totalResolvidos = totalResolvidosTickets + completedAppointments.length;
 
     // Resolvidos por Técnico no Período
-    const resolvidosRaw = await prisma.ticket.groupBy({
+    const resolvidosTickets = await prisma.ticket.groupBy({
         by: ['responsavelId'],
         where: {
             ...whereClauseObj,
@@ -66,6 +78,24 @@ export async function getDashboardMetrics(periodo: string) {
             id: true
         }
     });
+
+    const techResolvidosMap: Record<string, number> = {};
+    resolvidosTickets.forEach(r => {
+        if (r.responsavelId) {
+            techResolvidosMap[r.responsavelId] = r._count.id;
+        }
+    });
+
+    completedAppointments.forEach(app => {
+        app.technicians.forEach(t => {
+            techResolvidosMap[t.id] = (techResolvidosMap[t.id] || 0) + 1;
+        });
+    });
+
+    const resolvidosRaw = Object.keys(techResolvidosMap).map(id => ({
+        responsavelId: id,
+        _count: { id: techResolvidosMap[id] }
+    }));
 
     // Em Aberto por Técnico no Período
     const emAbertoRaw = await prisma.ticket.groupBy({
@@ -89,13 +119,20 @@ export async function getDashboardMetrics(periodo: string) {
         }
     });
 
-    const userResolvidosLocal = await prisma.ticket.count({
+    let userAppointmentsCount = 0;
+    completedAppointments.forEach(app => {
+        if (app.technicians.some(t => t.id === session.user.id)) {
+            userAppointmentsCount++;
+        }
+    });
+
+    const userResolvidosLocal = (await prisma.ticket.count({
         where: {
             ...whereClauseObj,
             status: "RESOLVIDO",
             responsavelId: session.user.id
         }
-    });
+    })) + userAppointmentsCount;
 
     const userAvaliacoesAvg = await prisma.ticket.aggregate({
         _avg: { notaAvaliacao: true },

@@ -29,11 +29,15 @@ export default function EditUserButton({ user, sectors = [] }: { user: any, sect
         const setor = formData.get("setor") as string;
 
         try {
-            await updateUser({ id: user.id, name, email, role, cpf, funcao, setor });
-            toast.success("Usuário atualizado com sucesso");
-            setOpen(false);
+            const result = await updateUser({ id: user.id, name, email, role, cpf, funcao, setor });
+            if (result.success) {
+                toast.success("Usuário atualizado com sucesso");
+                setOpen(false);
+            } else {
+                setError(result.error || "Erro ao atualizar usuário.");
+            }
         } catch (err: any) {
-            setError(err.message || "Ocorreu um erro ao atualizar usuário.");
+            setError("Erro de comunicação com o servidor.");
         } finally {
             setIsPending(false);
         }

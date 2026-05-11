@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -32,6 +32,8 @@ model User {
   ticketsSolicitados  Ticket[]       @relation("TicketSolicitante")
   chamadosSecundarios Ticket[]       @relation("TicketTecnicosSecundarios")
   announcements       Announcement[] @relation("AnnouncementCreator")
+  appointmentsCreated Appointment[]  @relation("AppointmentCreator")
+  appointmentsAssigned Appointment[] @relation("AppointmentTechnicians")
 }
 
 model Ticket {
@@ -170,4 +172,24 @@ model InviteToken {
   expiresAt DateTime
   createdBy String    // ID do admin que gerou o convite
   createdAt DateTime  @default(now())
+}
+
+model Appointment {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  status        String   @default("PENDING") // PENDING, CONFIRMED, COMPLETED, CANCELLED
+  startTime     DateTime
+  endTime       DateTime
+  location      String?
+  notified1Day  Boolean  @default(false)
+  notified30Min Boolean  @default(false)
+  
+  userId        String
+  user          User     @relation("AppointmentCreator", fields: [userId], references: [id])
+  
+  technicians   User[]   @relation("AppointmentTechnicians")
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }

@@ -20,16 +20,17 @@ export default function DeactivateUserButton({ userId, userName, isAtivo }: Deac
     async function handleToggleStatus() {
         setIsLoading(true);
         try {
-            if (isAtivo) {
-                await deactivateUser(userId);
-                toast.success(`Usuário ${userName} desativado com sucesso.`);
+            const action = isAtivo ? deactivateUser : reactivateUser;
+            const result = await action(userId);
+
+            if (result.success) {
+                toast.success(`Usuário ${userName} ${isAtivo ? 'desativado' : 'reativado'} com sucesso.`);
+                setOpen(false);
             } else {
-                await reactivateUser(userId);
-                toast.success(`Usuário ${userName} reativado com sucesso.`);
+                toast.error(result.error || "Erro ao alterar status do usuário.");
             }
-            setOpen(false);
         } catch (error: any) {
-            toast.error(error.message || "Erro ao alterar status do usuário.");
+            toast.error("Erro de comunicação com o servidor.");
         } finally {
             setIsLoading(false);
         }

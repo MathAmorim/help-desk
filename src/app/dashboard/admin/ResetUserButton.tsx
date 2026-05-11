@@ -19,9 +19,13 @@ export default function ResetUserButton({ userId, userName }: { userId: string, 
 
         try {
             const result = await resetUserPassword(userId);
-            setGeneratedPassword(result.tempPassword);
+            if (result.success) {
+                setGeneratedPassword(result.tempPassword!);
+            } else {
+                setError(result.error || "Erro ao resetar senha.");
+            }
         } catch (err: any) {
-            setError(err.message || "Erro ao resetar senha.");
+            setError("Erro de comunicação com o servidor.");
         } finally {
             setIsPending(false);
         }
