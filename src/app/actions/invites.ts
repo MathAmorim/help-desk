@@ -1,8 +1,8 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/auth";
+
 import { revalidatePath } from "next/cache";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
@@ -10,7 +10,7 @@ import { checkRateLimitIp } from "@/lib/rate-limit";
 import { normalizeSearchText } from "@/lib/utils";
 
 export async function generateInviteLink() {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session || (session.user.role !== "ADMIN" && session.user.role !== "SUPORTE")) {
         throw new Error("Não autorizado");
@@ -156,7 +156,7 @@ export async function registerWithInvite(token: string, data: any, clientIp: str
 }
 
 export async function getInvites() {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || (session.user.role !== "ADMIN" && session.user.role !== "SUPORTE")) {
         throw new Error("Não autorizado");
     }
@@ -182,7 +182,7 @@ export async function getInvites() {
 }
 
 export async function revokeInvite(id: string) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || (session.user.role !== "ADMIN" && session.user.role !== "SUPORTE")) {
         throw new Error("Não autorizado");
     }

@@ -1,8 +1,8 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/auth";
+
 import { revalidatePath } from "next/cache";
 
 /**
@@ -35,7 +35,7 @@ export async function getActiveAnnouncements() {
  * Busca todos os avisos (para área administrativa)
  */
 export async function getAllAnnouncements() {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (session?.user?.role !== "ADMIN") {
         throw new Error("Acesso negado");
     }
@@ -63,7 +63,7 @@ export async function createAnnouncement(data: {
     severity: string;
     expiresAt?: string | null;
 }) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (session?.user?.role !== "ADMIN") {
         throw new Error("Acesso negado");
     }
@@ -90,7 +90,7 @@ export async function createAnnouncement(data: {
  * Deleta um aviso
  */
 export async function deleteAnnouncement(id: string) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (session?.user?.role !== "ADMIN") {
         throw new Error("Acesso negado");
     }
@@ -107,7 +107,7 @@ export async function deleteAnnouncement(id: string) {
  * Alterna status de um aviso (Ativo/Inativo)
  */
 export async function toggleAnnouncementStatus(id: string, active: boolean) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (session?.user?.role !== "ADMIN") {
         throw new Error("Acesso negado");
     }

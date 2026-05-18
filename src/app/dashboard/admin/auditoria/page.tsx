@@ -1,10 +1,10 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/auth";
+
 import { redirect } from "next/navigation";
 import AuditoriaClient from "./AuditoriaClient";
 
 export default async function AuditLogPage() {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     // Proteção de Rota Crítica (Server Side)
     if (!session || !session.user || session.user.role !== "ADMIN") {

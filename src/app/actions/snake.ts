@@ -1,15 +1,15 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/auth";
+
 import { revalidatePath } from "next/cache";
 
 /**
  * Salva a pontuação do jogo da cobrinha
  */
 export async function saveSnakeScore(score: number) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session || !session.user) {
         return { error: "Acesso Negado: Apenas usuários logados podem salvar." };

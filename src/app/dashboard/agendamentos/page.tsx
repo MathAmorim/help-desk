@@ -1,5 +1,5 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/auth";
+
 import { redirect } from "next/navigation";
 import { getAppointments } from "@/app/actions/appointments";
 import AgendamentosClient from "./AgendamentosClient";
@@ -9,7 +9,7 @@ export const metadata = {
 };
 
 export default async function AgendamentosPage() {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session || (session.user.role !== "ADMIN" && session.user.role !== "SUPORTE")) {
         redirect("/dashboard");

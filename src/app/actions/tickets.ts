@@ -1,8 +1,8 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/auth";
+
 import { revalidatePath } from "next/cache";
 import { checkRateLimitUser } from "@/lib/rate-limit";
 import { normalizeSearchText } from "@/lib/utils";
@@ -16,7 +16,7 @@ export async function createTicket(data: {
     paraOutraPessoa: boolean;
     attachmentIds?: string[];
 }) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session || !session.user) {
         throw new Error("Não autorizado");
@@ -121,7 +121,7 @@ function buildWhereClause(baseWhere: any, filters?: TicketFilters, sla?: SLASett
 }
 
 export async function getMyTickets(filters?: TicketFilters) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session || !session.user) {
         throw new Error("Não autorizado");
@@ -156,7 +156,7 @@ export async function getMyTickets(filters?: TicketFilters) {
 }
 
 export async function getAllTickets(filters?: TicketFilters) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session || !session.user || (session.user.role !== "SUPORTE" && session.user.role !== "ADMIN")) {
         throw new Error("Não autorizado para ver todos os chamados");
@@ -190,7 +190,7 @@ export async function getAllTickets(filters?: TicketFilters) {
 }
 
 export async function getFocusedTickets() {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session || !session.user || (session.user.role !== "SUPORTE" && session.user.role !== "ADMIN")) {
         throw new Error("Não autorizado para ver chamados focados");
@@ -224,7 +224,7 @@ export async function getFocusedTickets() {
 }
 
 export async function getTicketById(id: string) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user) throw new Error("Não autorizado");
 
     const ticket = await prisma.ticket.findUnique({
@@ -269,7 +269,7 @@ export async function getTicketById(id: string) {
 }
 
 export async function addComment(ticketId: string, texto: string, isInterno: boolean, attachmentIds?: string[], isSolucao?: boolean) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user) throw new Error("Não autorizado");
 
     if (session.user.role === "USUARIO" && isInterno) {
@@ -407,7 +407,7 @@ export async function addComment(ticketId: string, texto: string, isInterno: boo
 }
 
 export async function updateTicketStatus(ticketId: string, status: string, responsavelId?: string) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user || session.user.role === "USUARIO") throw new Error("Não autorizado");
 
     const ticket = await prisma.$transaction(async (tx) => {
@@ -516,7 +516,7 @@ export async function updateTicketStatus(ticketId: string, status: string, respo
 }
 
 export async function updateTicketPriority(ticketId: string, prioridade: string) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user || session.user.role === "USUARIO") throw new Error("Não autorizado");
 
     const check = await prisma.ticket.findUnique({ 
@@ -566,7 +566,7 @@ export async function updateTicketPriority(ticketId: string, prioridade: string)
 }
 
 export async function updateTicketCategory(ticketId: string, categoria: string) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user || session.user.role === "USUARIO") throw new Error("Não autorizado");
 
     const check = await prisma.ticket.findUnique({ 
@@ -629,7 +629,7 @@ export async function updateTicketCategory(ticketId: string, categoria: string) 
 }
 
 export async function solicitarReabertura(ticketId: string) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user) throw new Error("Não autorizado");
 
     const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
@@ -666,7 +666,7 @@ export async function solicitarReabertura(ticketId: string) {
 }
 
 export async function avaliarReabertura(ticketId: string, aceitar: boolean) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user || session.user.role === "USUARIO") throw new Error("Não autorizado");
 
     const check = await prisma.ticket.findUnique({ where: { id: ticketId } });
@@ -710,7 +710,7 @@ export async function avaliarReabertura(ticketId: string, aceitar: boolean) {
 }
 
 export async function avaliarChamado(ticketId: string, nota: number, comentario?: string) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user) throw new Error("Não autorizado");
 
     const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
@@ -742,7 +742,7 @@ export async function avaliarChamado(ticketId: string, nota: number, comentario?
 }
 
 export async function getAvailableTechnicians() {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user || session.user.role === "USUARIO") throw new Error("Não autorizado");
 
     return prisma.user.findMany({
@@ -756,7 +756,7 @@ export async function getAvailableTechnicians() {
 }
 
 export async function vincularTecnicoSecundario(ticketId: string, tecnicoId: string) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user || session.user.role === "USUARIO") throw new Error("Não autorizado");
 
     const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
@@ -792,7 +792,7 @@ export async function vincularTecnicoSecundario(ticketId: string, tecnicoId: str
 }
 
 export async function desvincularTecnicoSecundario(ticketId: string, tecnicoId: string) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user || session.user.role === "USUARIO") throw new Error("Não autorizado");
 
     const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
@@ -828,7 +828,7 @@ export async function desvincularTecnicoSecundario(ticketId: string, tecnicoId: 
 }
 
 export async function encerrarChamadoUsuario(ticketId: string, motivo?: string) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user || session.user.role !== "USUARIO") throw new Error("Não autorizado");
 
     const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
@@ -896,7 +896,7 @@ export async function encerrarChamadoUsuario(ticketId: string, motivo?: string) 
 }
 
 export async function getSLASettings() {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user || session.user.role !== "ADMIN") {
         throw new Error("Não autorizado");
     }
@@ -914,7 +914,7 @@ export async function getSLASettings() {
 }
 
 export async function updateSLASettings(data: { tempoMaximoAssuncao: number; tempoMaximoConclusao: number }) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user || session.user.role !== "ADMIN") {
         throw new Error("Não autorizado");
     }
@@ -932,7 +932,7 @@ export async function updateSLASettings(data: { tempoMaximoAssuncao: number; tem
     return settings;
 }
 export async function resetTicketToOpen(ticketId: string) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user || session.user.role === "USUARIO") throw new Error("Não autorizado");
 
     const result = await prisma.$transaction(async (tx) => {

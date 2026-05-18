@@ -1,11 +1,11 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/auth";
+
 
 export async function getDashboardMetrics(periodo: string) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user || session.user.role === "USUARIO") throw new Error("Não autorizado");
 
     let startDate: Date | undefined;
@@ -218,7 +218,7 @@ export async function getDashboardMetrics(periodo: string) {
     };
 }
 export async function getUserBasicMetrics() {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user) throw new Error("Não autorizado");
 
     const userId = session.user.id;

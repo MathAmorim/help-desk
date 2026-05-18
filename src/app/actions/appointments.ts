@@ -1,8 +1,8 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/auth";
+
 import { revalidatePath } from "next/cache";
 
 // ----------------------------------------------------------------------
@@ -11,7 +11,7 @@ import { revalidatePath } from "next/cache";
 
 export async function getAvailableTechnicians(startTimeStr: string, endTimeStr: string) {
     try {
-        const session = await getServerSession(authOptions);
+        const session = await auth();
         if (!session) return { success: false, error: "Não autorizado", technicians: [] };
 
         const start = new Date(startTimeStr);
@@ -63,7 +63,7 @@ export async function getAvailableTechnicians(startTimeStr: string, endTimeStr: 
 
 export async function createAppointment(data: { title: string, description?: string, location?: string, startTime: string, endTime: string, technicianIds: string[] }) {
     try {
-        const session = await getServerSession(authOptions);
+        const session = await auth();
         if (!session || (session.user.role !== "ADMIN" && session.user.role !== "SUPORTE")) {
             return { success: false, error: "Não autorizado. Apenas técnicos e administradores podem agendar." };
         }
@@ -144,7 +144,7 @@ export async function createAppointment(data: { title: string, description?: str
 
 export async function getAppointments(startDateStr?: string, endDateStr?: string) {
     try {
-        const session = await getServerSession(authOptions);
+        const session = await auth();
         if (!session || (session.user.role !== "ADMIN" && session.user.role !== "SUPORTE")) {
             return { success: false, error: "Não autorizado", appointments: [] };
         }
@@ -183,7 +183,7 @@ export async function getAppointments(startDateStr?: string, endDateStr?: string
 
 export async function updateAppointmentStatus(id: string, status: string) {
     try {
-        const session = await getServerSession(authOptions);
+        const session = await auth();
         if (!session || (session.user.role !== "ADMIN" && session.user.role !== "SUPORTE")) {
             return { success: false, error: "Não autorizado" };
         }

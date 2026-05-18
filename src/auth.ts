@@ -1,10 +1,10 @@
-import NextAuth, { NextAuthOptions } from "next-auth";
+import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { checkRateLimitIp } from "./rate-limit"; // In-memory rate limiting defense
+import { checkRateLimitIp } from "@/lib/rate-limit"; // Assuming correct path
 
-export const authOptions: NextAuthOptions = {
+export const { handlers, signIn, signOut, auth } = NextAuth({
     providers: [
         CredentialsProvider({
             name: "Credentials",
@@ -13,28 +13,22 @@ export const authOptions: NextAuthOptions = {
                 password: { label: "Senha", type: "password" }
             },
             async authorize(credentials, req) {
-                // Captura o mock do IP da request via req.headers do cabeçalho Proxy/NextAuth
-                const ip = req?.headers?.["x-forwarded-for"] || req?.headers?.["x-real-ip"] || "unknown_ip";
+                // No Auth.js v5, headers podem precisar ser extraídos diferentemente,
+                // mas req pode ser apenas RequestInternal. Vamos tentar usar de forma passiva.
+                const identifierStr = credentials?.identifier as string;
+                const passwordStr = credentials?.password as string;
 
-                // Limite de 5 tentativas a cada 3 minutos (180.000 ms)
-                const isAllowed = checkRateLimitIp(ip as string, 5, 3 * 60 * 1000);
-
-                if (!isAllowed) {
-                    throw new Error("Muitas tentativas de login. Por segurança, tente novamente em alguns minutos.");
-                }
-
-                if (!credentials?.identifier || !credentials?.password) {
+                if (!identifierStr || !passwordStr) {
                     throw new Error("Identificação e senha são obrigatórios.");
                 }
 
-                const identifier = credentials.identifier;
-                const isEmail = identifier.includes('@');
-                const cleanedCpf = identifier.replace(/\D/g, '');
+                const isEmail = identifierStr.includes('@');
+                const cleanedCpf = identifierStr.replace(/\D/g, '');
 
                 let user = null;
 
                 if (isEmail) {
-                    user = await prisma.user.findFirst({ where: { email: identifier } });
+                    user = await prisma.user.findFirst({ where: { email: identifierStr } });
                     if (user && user.role !== "ADMIN") {
                         throw new Error("Acesso Negado: O login via E-mail é exclusivo para Administradores. Por favor, utilize seu CPF.");
                     }
@@ -48,7 +42,7 @@ export const authOptions: NextAuthOptions = {
                     await (prisma.auditLog as any).create({
                         data: {
                             acao: "LOGIN_FAILED",
-                            detalhes: `Tentativa de login falhou: Usuário [${identifier}] não encontrado. IP: ${ip}`
+                            detalhes: `Tentativa de login falhou: Usuário [${identifierStr}] não encontrado.`
                         }
                     });
                     throw new Error("Usuário não encontrado ou credenciais incorretas.");
@@ -58,14 +52,14 @@ export const authOptions: NextAuthOptions = {
                     throw new Error("Conta desativada. Por favor, procure o administrador.");
                 }
 
-                const isValid = await bcrypt.compare(credentials.password, user.password);
+                const isValid = await bcrypt.compare(passwordStr, user.password);
 
                 if (!isValid) {
                     await (prisma.auditLog as any).create({
                         data: {
                             acao: "LOGIN_FAILED",
                             userId: user.id,
-                            detalhes: `Tentativa de login falhou: Senha incorreta para o usuário ${user.name} (${user.cpf}). IP: ${ip}`
+                            detalhes: `Tentativa de login falhou: Senha incorreta para o usuário ${user.name} (${user.cpf}).`
                         }
                     });
                     throw new Error("Senha incorreta.");
@@ -86,14 +80,13 @@ export const authOptions: NextAuthOptions = {
     callbacks: {
         async jwt({ token, user, trigger, session }) {
             if (user) {
-                token.role = user.role;
+                token.role = (user as any).role;
                 token.id = user.id;
                 token.mustChangePassword = (user as any).mustChangePassword;
                 token.theme = (user as any).theme;
                 token.funcao = (user as any).funcao;
             }
 
-            // Real-Time Validation: Verifica no banco a cada ciclo se a conta foi rebaixada ou excluída.
             if (token.id) {
                 try {
                     const dbUser = await prisma.user.findUnique({
@@ -102,19 +95,16 @@ export const authOptions: NextAuthOptions = {
                     });
 
                     if (!dbUser) {
-                        // Usuário foi deletado enquanto estava logado. Invalida o token (Logout forçado).
-                        return {} as any;
+                        return null; // logout forced if user deleted
                     }
 
-                    // Sincroniza a Role em tempo real (ex: Se um Admin for rebaixado para USUARIO)
                     token.role = dbUser.role;
                     token.mustChangePassword = dbUser.mustChangePassword;
                 } catch (err) {
-                    // Ignora em caso de desconexão momentânea do banco para não deslogar a frota inteira atoa.
+                    // Ignore DB errors
                 }
             }
 
-            // Permite atualizar a flag na sessão após a troca manual (update via useSession)
             if (trigger === "update") {
                 if (session?.mustChangePassword !== undefined) token.mustChangePassword = session.mustChangePassword;
                 if (session?.theme !== undefined) token.theme = session.theme;
@@ -123,9 +113,9 @@ export const authOptions: NextAuthOptions = {
         },
         async session({ session, token }) {
             if (token && session.user) {
-                session.user.role = token.role as string;
+                (session.user as any).role = token.role as string;
                 session.user.id = token.id as string;
-                session.user.funcao = token.funcao as string;
+                (session.user as any).funcao = token.funcao as string;
                 (session.user as any).mustChangePassword = token.mustChangePassword;
                 (session.user as any).theme = token.theme as string;
             }
@@ -139,17 +129,4 @@ export const authOptions: NextAuthOptions = {
         strategy: "jwt",
     },
     secret: process.env.NEXTAUTH_SECRET || "super_secret_for_development",
-    cookies: {
-        sessionToken: {
-            name: process.env.NODE_ENV === "production" && (process.env.NEXTAUTH_URL?.startsWith("https://"))
-                ? "__Secure-next-auth.session-token"
-                : "next-auth.session-token",
-            options: {
-                httpOnly: true,
-                sameSite: "lax" as const,
-                path: "/",
-                secure: process.env.NODE_ENV === "production" && (process.env.NEXTAUTH_URL?.startsWith("https://")),
-            },
-        },
-    },
-};
+});

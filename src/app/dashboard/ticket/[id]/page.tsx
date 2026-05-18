@@ -1,6 +1,6 @@
 import { getTicketById } from "@/app/actions/tickets";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/auth";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -16,7 +16,7 @@ import ShareTicketButton from "./ShareTicketButton";
 import TicketChatBox from "./TicketChatBox";
 import { notFound } from "next/navigation";
 export default async function TicketDetailsPage({ params }: { params: Promise<{ id: string }> }) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session) return null;
 

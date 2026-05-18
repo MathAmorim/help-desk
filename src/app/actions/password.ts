@@ -2,12 +2,12 @@
 
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/auth";
+
 import { revalidatePath } from "next/cache";
 
 export async function changeUserPassword(formData: FormData) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session || !session.user) {
         throw new Error("Não autorizado");

@@ -1,5 +1,5 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/auth";
+
 import prisma from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -18,7 +18,7 @@ import SortButton from "./SortButton";
 import { normalizeSearchText } from "@/lib/utils";
 
 export default async function AdminUsersPage({ searchParams }: { searchParams: Promise<{ showInactive?: string; q?: string; sortBy?: string; order?: string }> }) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     const resolvedParams = await searchParams;
     const showInactive = resolvedParams.showInactive === "true";
     const q = resolvedParams.q || "";

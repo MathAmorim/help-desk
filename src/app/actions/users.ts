@@ -2,8 +2,8 @@
 
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/auth";
+
 import { revalidatePath } from "next/cache";
 import { normalizeSearchText } from "@/lib/utils";
 
@@ -29,7 +29,7 @@ function generateRandomPassword() {
 
 export async function createUser(data: { name: string; email?: string; role: string; cpf: string; funcao?: string; setor?: string }) {
     try {
-        const session = await getServerSession(authOptions);
+        const session = await auth();
 
         if (!session || session.user.role !== "ADMIN") {
             return { success: false, error: "Não autorizado" };
@@ -105,7 +105,7 @@ export async function createUser(data: { name: string; email?: string; role: str
 
 export async function resetUserPassword(userId: string) {
     try {
-        const session = await getServerSession(authOptions);
+        const session = await auth();
 
         if (!session || session.user.role !== "ADMIN") {
             return { success: false, error: "Não autorizado" };
@@ -145,7 +145,7 @@ export async function resetUserPassword(userId: string) {
 
 export async function updateUser(data: { id: string; name: string; email?: string; role: string; cpf: string; funcao?: string; setor?: string }) {
     try {
-        const session = await getServerSession(authOptions);
+        const session = await auth();
 
         if (!session || session.user.role !== "ADMIN") {
             return { success: false, error: "Não autorizado" };
@@ -217,7 +217,7 @@ export async function updateUser(data: { id: string; name: string; email?: strin
 
 export async function deactivateUser(userId: string) {
     try {
-        const session = await getServerSession(authOptions);
+        const session = await auth();
 
         if (!session || session.user.role !== "ADMIN") {
             return { success: false, error: "Não autorizado" };
@@ -255,7 +255,7 @@ export async function deactivateUser(userId: string) {
 
 export async function reactivateUser(userId: string) {
     try {
-        const session = await getServerSession(authOptions);
+        const session = await auth();
 
         if (!session || session.user.role !== "ADMIN") {
             return { success: false, error: "Não autorizado" };
@@ -288,7 +288,7 @@ export async function reactivateUser(userId: string) {
 }
 
 export async function exportUsersAction() {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session || session.user.role !== "ADMIN") {
         throw new Error("Não autorizado");
@@ -312,7 +312,7 @@ export async function exportUsersAction() {
 }
 
 export async function importUsersAction(usersData: any[]) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session || session.user.role !== "ADMIN") {
         throw new Error("Não autorizado");

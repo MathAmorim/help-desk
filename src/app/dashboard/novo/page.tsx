@@ -1,12 +1,12 @@
 import NewTicketForm from "./NewTicketForm";
 import prisma from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/auth";
+
 
 export const dynamic = "force-dynamic";
 
 export default async function NovoChamadoPage() {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     let userSetor = "";
     if (session?.user?.id) {

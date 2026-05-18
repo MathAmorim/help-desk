@@ -1,12 +1,12 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/auth";
+
 import { revalidatePath } from "next/cache";
 
 export async function createCategory(nome: string, prioridadePadrao: string, placeholder?: string, tempoResolucao?: number) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user || (session.user.role !== "ADMIN" && session.user.role !== "SUPORTE")) {
         throw new Error("Não autorizado");
     }
@@ -26,7 +26,7 @@ export async function createCategory(nome: string, prioridadePadrao: string, pla
 }
 
 export async function updateCategory(id: string, nome: string, prioridadePadrao: string, ativo: boolean, placeholder?: string, tempoResolucao?: number) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user || (session.user.role !== "ADMIN" && session.user.role !== "SUPORTE")) {
         throw new Error("Não autorizado");
     }
@@ -48,7 +48,7 @@ export async function updateCategory(id: string, nome: string, prioridadePadrao:
 }
 
 export async function getCategories(somenteAtivas = true) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user) throw new Error("Não autorizado");
 
     return prisma.category.findMany({

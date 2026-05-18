@@ -1,5 +1,5 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/auth";
+
 import { getDashboardMetrics } from "@/app/actions/analytics";
 import { redirect } from "next/navigation";
 import AnalyticsCharts from "./AnalyticsCharts";
@@ -8,7 +8,7 @@ import { FileStack, CheckCircle, Star, Trophy, Briefcase, Activity } from "lucid
 import PeriodFilter from "./PeriodFilter";
 
 export default async function RelatoriosPage({ searchParams }: { searchParams: Promise<{ periodo?: string }> }) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user || session.user.role === "USUARIO") {
         redirect("/dashboard");
     }

@@ -1,12 +1,12 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/auth";
+
 import { revalidatePath } from "next/cache";
 
 export async function getUnreadNotifications() {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user) return [];
 
     const unread = await prisma.notification.findMany({
@@ -24,7 +24,7 @@ export async function getUnreadNotifications() {
 }
 
 export async function markAsRead(notificationId: string) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user) throw new Error("Não autorizado");
 
     await prisma.notification.update({
@@ -41,7 +41,7 @@ export async function markAsRead(notificationId: string) {
 }
 
 export async function markAllAsRead() {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user) throw new Error("Não autorizado");
 
     await prisma.notification.updateMany({

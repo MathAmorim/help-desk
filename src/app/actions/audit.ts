@@ -1,7 +1,7 @@
 "use server"
 
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/auth";
+
 import prisma from "@/lib/prisma";
 
 export async function getAuditLogs(params: {
@@ -12,7 +12,7 @@ export async function getAuditLogs(params: {
     startDate?: string;
     endDate?: string;
 }) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     
     // 1. Segurança Rigorosa
     if (!session || !session.user || session.user.role !== "ADMIN") {
@@ -100,7 +100,7 @@ export async function getAuditLogs(params: {
 }
 
 export async function getAuditUsers() {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || session.user.role !== "ADMIN") return [];
 
     return prisma.user.findMany({

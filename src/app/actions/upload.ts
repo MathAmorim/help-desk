@@ -1,7 +1,7 @@
 "use server";
 
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/auth";
+
 import fs from "fs";
 import path from "path";
 import prisma from "@/lib/prisma";
@@ -32,7 +32,7 @@ const ALLOWED_MIME_PREFIXES = [
 ];
 
 export async function uploadFile(formData: FormData) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user) throw new Error("Não autorizado");
 
     const file = formData.get("file") as File;

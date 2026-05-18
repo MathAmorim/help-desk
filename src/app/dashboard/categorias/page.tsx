@@ -1,5 +1,5 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/auth";
+
 import prisma from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -17,7 +17,7 @@ function getPriorityBadgeClass(priority: string) {
 }
 
 export default async function AdminCategoriasPage() {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session || (session.user.role !== "ADMIN" && session.user.role !== "SUPORTE")) {
         return (

@@ -1,5 +1,5 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/auth";
+
 import { redirect } from "next/navigation";
 import { LogOut, Home } from "lucide-react";
 import Link from "next/link";
@@ -29,7 +29,7 @@ export default async function DashboardLayout({
 }: {
     children: React.ReactNode;
 }) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session) {
         redirect("/login");

@@ -1,12 +1,12 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/auth";
+
 import { revalidatePath } from "next/cache";
 
 export async function getSectorsWithUsers() {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user || session.user.role !== "ADMIN") {
         throw new Error("Não autorizado");
     }
@@ -35,7 +35,7 @@ export async function getSectorsWithUsers() {
 }
 
 export async function migrateSector(oldSectorName: string, newSectorName: string) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user || session.user.role !== "ADMIN") {
         throw new Error("Não autorizado");
     }
@@ -56,7 +56,7 @@ export async function migrateSector(oldSectorName: string, newSectorName: string
 }
 
 export async function updateUserSector(userId: string, newSectorName: string) {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user || session.user.role !== "ADMIN") {
         throw new Error("Não autorizado");
     }

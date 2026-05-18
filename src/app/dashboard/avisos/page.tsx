@@ -4,14 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { Megaphone, AlertTriangle, Info, Clock, User, Settings2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/auth";
+
 import NewAnnouncementButton from "@/components/announcements/NewAnnouncementButton";
 import DeleteAnnouncementButton from "@/components/announcements/DeleteAnnouncementButton";
 import ToggleAnnouncementButton from "@/components/announcements/ToggleAnnouncementButton";
 
 export default async function AnnouncementsPage() {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     const isAdmin = session?.user?.role === "ADMIN";
     
     // Admins vêem tudo, usuários vêem apenas ativos

@@ -1,10 +1,10 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/auth";
+
 import prisma from "@/lib/prisma";
 import ConfiguracoesForm from "./ConfiguracoesForm";
 
 export default async function ConfiguracoesPage() {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session || !session.user) {
         return null;
