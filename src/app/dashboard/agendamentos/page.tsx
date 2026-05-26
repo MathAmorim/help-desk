@@ -23,11 +23,11 @@ export default async function AgendamentosPage() {
     const { appointments } = await getAppointments(firstDay, lastDay);
 
     return (
-        <div className="flex-1 p-4 sm:p-8 overflow-y-auto bg-slate-50 dark:bg-slate-950">
-            <div className="max-w-7xl mx-auto space-y-6">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Agenda da Equipe</h1>
-                    <p className="text-slate-500 dark:text-slate-400 mt-2">
+        <div className="flex-1 py-4 sm:p-8 overflow-y-auto bg-slate-50 dark:bg-slate-950">
+            <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
+                <div className="px-4 sm:px-0">
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Agenda da Equipe</h1>
+                    <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 mt-1 sm:mt-2">
                         Gerencie serviços, visitas técnicas e disponibilidade.
                     </p>
                 </div>

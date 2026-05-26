@@ -66,7 +66,7 @@ export function Filters({ categoriasDisponiveis, basePath = "/dashboard" }: { ca
     return (
         <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 items-end sm:items-center bg-white dark:bg-slate-950 p-4 rounded-lg border shadow-sm mb-6">
             <div className="flex-1 w-full space-y-1">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Busca Rápida</label>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Busca</label>
                 <div className="relative">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
                     <Input

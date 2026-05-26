@@ -104,12 +104,12 @@ export default async function TodosOsChamadosPage({
                                 <TableRow>
                                     <TableHead className="hidden md:table-cell w-[100px]">ID</TableHead>
                                     <TableHead>Título</TableHead>
-                                    <TableHead className="hidden md:table-cell">Categoria</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead className="hidden md:table-cell">Prioridade</TableHead>
-                                    <TableHead className="hidden md:table-cell">Solicitante</TableHead>
-                                    <TableHead className="hidden md:table-cell">Responsável</TableHead>
-                                    <TableHead className="text-right">Ação</TableHead>
+                                    <TableHead className="hidden md:table-cell w-[140px]">Categoria</TableHead>
+                                    <TableHead className="hidden md:table-cell w-[140px]">Status</TableHead>
+                                    <TableHead className="hidden md:table-cell w-[120px]">Prioridade</TableHead>
+                                    <TableHead className="hidden md:table-cell w-[160px]">Solicitante</TableHead>
+                                    <TableHead className="hidden md:table-cell w-[160px]">Responsável</TableHead>
+                                    <TableHead className="text-right w-[100px]">Ação</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -129,13 +129,15 @@ export default async function TodosOsChamadosPage({
                                                 <div className="font-semibold text-slate-700 dark:text-slate-300">#{ticket.id.substring(ticket.id.length - 6).toUpperCase()}</div>
                                                 <div className="text-[10px] whitespace-nowrap opacity-75">{timeAgo(ticket.createdAt)}</div>
                                             </TableCell>
-                                            <TableCell className="font-medium max-w-[200px] truncate" title={ticket.titulo}>
+                                            <TableCell className="font-medium max-w-[250px] truncate" title={ticket.titulo}>
                                                 {ticket.titulo}
+                                                <div className="md:hidden text-[12px] whitespace-nowrap opacity-75">{ticket.solicitante?.name || "Desconhecido"}</div>
+                                                <div className="md:hidden text-[10px] whitespace-nowrap opacity-75">{timeAgo(ticket.createdAt)}</div>
                                             </TableCell>
                                             <TableCell className="hidden md:table-cell text-slate-600 dark:text-slate-400 text-sm">
                                                 {ticket.categoria}
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell className="hidden md:table-cell">
                                                 {ticket.encerradoPeloAutor ? (
                                                     <Badge className="bg-emerald-700 hover:bg-emerald-800 text-white">Encerrado pelo Autor</Badge>
                                                 ) : (

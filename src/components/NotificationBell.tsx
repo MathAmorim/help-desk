@@ -84,6 +84,43 @@ export default function NotificationBell() {
         setOpen(false);
     }
 
+    const renderMessageWithBadges = (message: string) => {
+        const statusMap: Record<string, { label: string, classes: string }> = {
+            "ABERTO": { label: "Aberto", classes: "bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700" },
+            "EM_ANDAMENTO": { label: "Em Andamento", classes: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800" },
+            "AGUARDANDO_USUARIO": { label: "Aguard. Usuário", classes: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800" },
+            "PENDENTE_USUARIO": { label: "Pend. Usuário", classes: "bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800" },
+            "CONCLUIDO": { label: "Concluído", classes: "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800" }
+        };
+
+        let result: React.ReactNode[] = [message];
+
+        Object.keys(statusMap).forEach(key => {
+            const newResult: React.ReactNode[] = [];
+            result.forEach(part => {
+                if (typeof part === 'string' && part.includes(key)) {
+                    const parts = part.split(key);
+                    parts.forEach((p, i) => {
+                        newResult.push(p);
+                        if (i < parts.length - 1) {
+                            const style = statusMap[key];
+                            newResult.push(
+                                <span key={`${key}-${i}`} className={`inline-flex items-center px-1.5 py-0.5 mx-0.5 rounded-[4px] text-[9px] font-bold uppercase tracking-wider border ${style.classes}`}>
+                                    {style.label}
+                                </span>
+                            );
+                        }
+                    });
+                } else {
+                    newResult.push(part);
+                }
+            });
+            result = newResult;
+        });
+
+        return result;
+    };
+
     if (!isMounted) {
         return (
             <div className="relative flex items-center justify-center h-10 w-10 text-slate-600 dark:text-slate-300 rounded-md">
@@ -127,7 +164,7 @@ export default function NotificationBell() {
                                 <li key={notif.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition flex items-start cursor-pointer" onClick={() => handleMarkAsRead(notif.id, notif.link)}>
                                     <div className="h-2 w-2 rounded-full bg-indigo-600 dark:bg-indigo-400 mt-1.5 mr-3 flex-shrink-0" />
                                     <div className="flex-1">
-                                        <p className="text-sm font-medium text-slate-800 dark:text-slate-200 leading-snug">{notif.mensagem}</p>
+                                        <p className="text-sm font-medium text-slate-800 dark:text-slate-200 leading-snug">{renderMessageWithBadges(notif.mensagem)}</p>
                                         <span className="text-xs text-slate-500 dark:text-slate-400">{new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                     </div>
                                 </li>

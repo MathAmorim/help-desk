@@ -3,7 +3,7 @@ const nextConfig = {
   transpilePackages: ["next-auth"],
   // Só permite dev origins fora de produção
   ...(process.env.NODE_ENV !== "production" && {
-    allowedDevOrigins: ["10.2.3.187"],
+    allowedDevOrigins: ["10.2.3.228"],
   }),
 
   async headers() {

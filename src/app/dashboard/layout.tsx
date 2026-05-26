@@ -93,7 +93,7 @@ export default async function DashboardLayout({
 
                 {/* Bloco Central/Dinâmico (Perfil) - Flexiona para ocupar o espaço com segurança */}
                 <div className="flex flex-1 items-center justify-center lg:justify-end min-w-0 pr-2 lg:pr-4">
-                    <div className="flex flex-col items-center lg:items-end justify-center -space-y-0.5 max-w-[140px] sm:max-w-[180px] flex-shrink px-1">
+                    <div className="flex flex-col items-center lg:items-end justify-center -space-y-0.5 max-w-[140px] sm:max-w-none flex-shrink px-1">
                         <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 truncate w-full text-center lg:text-right" title={session.user.name || undefined}>{formatShortName(session.user.name)}</span>
                         {session.user.funcao && (
                             <span className="text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-tight truncate w-full text-center lg:text-right">{session.user.funcao}</span>

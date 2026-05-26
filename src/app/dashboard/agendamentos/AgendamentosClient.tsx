@@ -189,17 +189,17 @@ export default function AgendamentosClient({ initialAppointments, userId }: { in
     };
 
     return (
-        <div className="flex flex-col h-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+        <div className="flex flex-col h-full bg-white dark:bg-slate-900 sm:border border-y sm:border-x-0 border-slate-200 dark:border-slate-800 sm:rounded-2xl sm:shadow-sm overflow-hidden">
             
             {/* TOOLBAR DO CALENDÁRIO */}
-            <div className="flex flex-col sm:flex-row items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 gap-4">
-                <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row items-center justify-between p-3 sm:p-4 border-b border-slate-200 dark:border-slate-800 gap-3 sm:gap-4">
+                <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto">
                     <Button variant="outline" size="sm" onClick={goToToday} className="hidden sm:flex h-9 border-slate-200 dark:border-slate-700">Hoje</Button>
                     <div className="flex items-center">
-                        <Button variant="ghost" size="icon" onClick={prev} className="h-9 w-9"><ChevronLeft className="h-5 w-5" /></Button>
-                        <Button variant="ghost" size="icon" onClick={next} className="h-9 w-9"><ChevronRight className="h-5 w-5" /></Button>
+                        <Button variant="ghost" size="icon" onClick={prev} className="h-8 w-8 sm:h-9 sm:w-9"><ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" /></Button>
+                        <Button variant="ghost" size="icon" onClick={next} className="h-8 w-8 sm:h-9 sm:w-9"><ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" /></Button>
                     </div>
-                    <h2 className="text-lg font-bold capitalize ml-2 text-slate-800 dark:text-slate-100 min-w-[150px]">
+                    <h2 className="text-base sm:text-lg font-bold capitalize ml-1 sm:ml-2 text-slate-800 dark:text-slate-100 min-w-[120px] sm:min-w-[150px]">
                         {view === "month" && format(currentDate, "MMMM yyyy", { locale: ptBR })}
                         {view === "week" && `Semana de ${format(startOfWeek(currentDate), "dd MMM", { locale: ptBR })}`}
                         {view === "day" && format(currentDate, "dd 'de' MMMM, yyyy", { locale: ptBR })}
@@ -207,15 +207,15 @@ export default function AgendamentosClient({ initialAppointments, userId }: { in
                 </div>
 
                 <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-                    <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                        <button onClick={() => setView("month")} className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${view === "month" ? "bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-slate-100" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}>Mês</button>
-                        <button onClick={() => setView("week")} className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${view === "week" ? "bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-slate-100" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}>Semana</button>
-                        <button onClick={() => setView("day")} className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${view === "day" ? "bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-slate-100" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}>Dia</button>
+                    <div className="flex p-0.5 sm:p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                        <button onClick={() => setView("month")} className={`px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium rounded-md transition-all ${view === "month" ? "bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-slate-100" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}>Mês</button>
+                        <button onClick={() => setView("week")} className={`px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium rounded-md transition-all ${view === "week" ? "bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-slate-100" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}>Semana</button>
+                        <button onClick={() => setView("day")} className={`px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium rounded-md transition-all ${view === "day" ? "bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-slate-100" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}>Dia</button>
                     </div>
                     
                     <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                        <DialogTrigger className="inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:pointer-events-none disabled:opacity-50 bg-indigo-600 hover:bg-indigo-700 text-white h-9 px-3 shadow-sm shrink-0">
-                            <Plus className="h-4 w-4 mr-1.5" /> Agendar
+                        <DialogTrigger className="inline-flex items-center justify-center rounded-lg text-xs sm:text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:pointer-events-none disabled:opacity-50 bg-indigo-600 hover:bg-indigo-700 text-white h-8 sm:h-9 px-2 sm:px-3 shadow-sm shrink-0">
+                            <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-1.5" /> Agendar
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                             <form onSubmit={handleCreateAppointment}>
@@ -232,7 +232,7 @@ export default function AgendamentosClient({ initialAppointments, userId }: { in
                                     
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <Label htmlFor="location">Localização (Opcional)</Label>
+                                            <Label htmlFor="location">Localização</Label>
                                             <Input id="location" name="location" placeholder="Ex: CPD" />
                                         </div>
                                         <div className="space-y-2">
@@ -248,14 +248,14 @@ export default function AgendamentosClient({ initialAppointments, userId }: { in
                                     </div>
 
                                     <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 space-y-4">
-                                        <div className="flex items-center justify-between">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
                                             <Label className="text-indigo-600 dark:text-indigo-400 font-bold flex items-center gap-2">
                                                 <Clock className="h-4 w-4" /> Janela de Tempo
                                             </Label>
-                                            <div className="flex gap-1">
-                                                <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={() => applyShortcut("manha")}>Manhã</Button>
-                                                <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={() => applyShortcut("tarde")}>Tarde</Button>
-                                                <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={() => applyShortcut("dia_todo")}>Dia Todo</Button>
+                                            <div className="flex flex-wrap gap-1 sm:gap-1">
+                                                <Button type="button" variant="outline" size="sm" className="h-7 text-xs flex-1 sm:flex-none" onClick={() => applyShortcut("manha")}>Manhã</Button>
+                                                <Button type="button" variant="outline" size="sm" className="h-7 text-xs flex-1 sm:flex-none" onClick={() => applyShortcut("tarde")}>Tarde</Button>
+                                                <Button type="button" variant="outline" size="sm" className="h-7 text-xs flex-1 sm:flex-none" onClick={() => applyShortcut("dia_todo")}>Dia Todo</Button>
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
@@ -301,7 +301,7 @@ export default function AgendamentosClient({ initialAppointments, userId }: { in
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="description">Detalhes (Opcional)</Label>
+                                        <Label htmlFor="description">Detalhes <span className="text-xs font-normal text-slate-500">(Opcional)</span></Label>
                                         <textarea id="description" name="description" rows={2} className="w-full flex rounded-md border border-slate-200 bg-transparent px-3 py-2 text-sm shadow-sm dark:border-slate-800 dark:bg-slate-950" />
                                     </div>
                                 </div>
@@ -322,7 +322,7 @@ export default function AgendamentosClient({ initialAppointments, userId }: { in
             {/* ÁREA PRINCIPAL DO CALENDÁRIO */}
             <div className="flex-1 overflow-auto bg-slate-50/50 dark:bg-slate-950">
                 {view === "month" && (
-                    <div className="min-w-[700px] h-full flex flex-col">
+                    <div className="min-w-0 sm:min-w-[700px] h-full flex flex-col">
                         <div className="grid grid-cols-7 border-b border-slate-200 dark:border-slate-800">
                             {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => (
                                 <div key={d} className="py-2 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">{d}</div>
@@ -333,21 +333,21 @@ export default function AgendamentosClient({ initialAppointments, userId }: { in
                                 const events = getEventsForDay(day);
                                 const isCurrentMonth = isSameMonth(day, currentDate);
                                 return (
-                                    <div key={day.toISOString()} className={`min-h-[100px] border-b border-r border-slate-100 dark:border-slate-800/50 p-1 flex flex-col ${!isCurrentMonth ? "bg-slate-50/80 dark:bg-slate-900/50 text-slate-400" : "bg-white dark:bg-slate-900"}`}>
-                                        <div className={`text-xs font-semibold p-1 mb-1 text-center rounded-full w-7 h-7 flex items-center justify-center mx-auto ${isToday(day) ? "bg-indigo-600 text-white" : ""}`}>
+                                    <div key={day.toISOString()} className={`min-h-[70px] sm:min-h-[100px] border-b border-r border-slate-100 dark:border-slate-800/50 p-0.5 sm:p-1 flex flex-col ${!isCurrentMonth ? "bg-slate-50/80 dark:bg-slate-900/50 text-slate-400" : "bg-white dark:bg-slate-900"}`}>
+                                        <div className={`text-[10px] sm:text-xs font-semibold p-0.5 sm:p-1 mb-0.5 sm:mb-1 text-center rounded-full w-5 h-5 sm:w-7 sm:h-7 flex items-center justify-center mx-auto ${isToday(day) ? "bg-indigo-600 text-white" : ""}`}>
                                             {format(day, 'd')}
                                         </div>
-                                        <div className="flex-1 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                                        <div className="flex-1 overflow-y-auto space-y-0.5 sm:space-y-1 pr-0.5 sm:pr-1 custom-scrollbar">
                                             {events.map(ev => (
                                                 <div 
                                                     key={ev.id} 
                                                     onClick={() => setSelectedAppointment(ev)}
-                                                    className={`text-[10px] sm:text-xs truncate px-1.5 py-1 rounded cursor-pointer transition-transform hover:scale-[1.02] shadow-sm font-medium ${
+                                                    className={`text-[8px] sm:text-[10px] md:text-xs truncate px-0.5 py-0.5 sm:px-1.5 sm:py-1 rounded cursor-pointer transition-transform hover:scale-[1.02] shadow-sm font-medium ${
                                                         ev.status === "COMPLETED" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800" : 
                                                         "bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800"
                                                     }`}
                                                 >
-                                                    {format(new Date(ev.startTime), 'HH:mm')} - {ev.title}
+                                                    <span className="font-bold">{format(new Date(ev.startTime), 'HH:mm')}</span> <span className="hidden sm:inline">- {ev.title}</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -360,12 +360,15 @@ export default function AgendamentosClient({ initialAppointments, userId }: { in
 
                 {/* VISÃO SEMANA: COLUNAS HORIONTAIS */}
                 {view === "week" && (
-                    <div className="min-w-[900px] h-full flex flex-col">
+                    <div className="min-w-0 sm:min-w-[900px] h-full flex flex-col">
                         <div className="grid grid-cols-7 border-b border-slate-200 dark:border-slate-800">
                             {eachDayOfInterval({ start: startOfWeek(currentDate), end: endOfWeek(currentDate) }).map(day => (
-                                <div key={day.toISOString()} className="py-3 text-center border-r border-slate-200 dark:border-slate-800 last:border-r-0">
-                                    <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{format(day, 'EEE', { locale: ptBR })}</div>
-                                    <div className={`text-lg font-bold mt-1 w-8 h-8 mx-auto flex items-center justify-center rounded-full ${isToday(day) ? 'bg-indigo-600 text-white' : 'text-slate-800 dark:text-slate-200'}`}>
+                                <div key={day.toISOString()} className="py-2 sm:py-3 text-center border-r border-slate-200 dark:border-slate-800 last:border-r-0">
+                                    <div className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-tighter sm:tracking-wider">
+                                        <span className="sm:hidden">{format(day, 'EEEEE', { locale: ptBR })}</span>
+                                        <span className="hidden sm:inline">{format(day, 'EEE', { locale: ptBR })}</span>
+                                    </div>
+                                    <div className={`text-sm sm:text-lg font-bold mt-0.5 sm:mt-1 w-6 h-6 sm:w-8 sm:h-8 mx-auto flex items-center justify-center rounded-full ${isToday(day) ? 'bg-indigo-600 text-white' : 'text-slate-800 dark:text-slate-200'}`}>
                                         {format(day, 'd')}
                                     </div>
                                 </div>
@@ -375,26 +378,26 @@ export default function AgendamentosClient({ initialAppointments, userId }: { in
                             {eachDayOfInterval({ start: startOfWeek(currentDate), end: endOfWeek(currentDate) }).map(day => {
                                 const events = getEventsForDay(day);
                                 return (
-                                    <div key={day.toISOString()} className="min-h-[200px] border-r border-slate-200 dark:border-slate-800 p-2 flex flex-col bg-white dark:bg-slate-900 last:border-r-0">
-                                        <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                                    <div key={day.toISOString()} className="min-h-[120px] sm:min-h-[200px] border-r border-slate-200 dark:border-slate-800 p-1 sm:p-2 flex flex-col bg-white dark:bg-slate-900 last:border-r-0">
+                                        <div className="flex-1 overflow-y-auto space-y-1 sm:space-y-2 pr-1 custom-scrollbar">
                                             {events.length === 0 ? (
-                                                <div className="text-xs text-center text-slate-400 italic mt-4">Nenhum serviço</div>
+                                                <div className="text-[10px] sm:text-xs text-center text-slate-400 italic mt-2 sm:mt-4">Nenhum serviço</div>
                                             ) : (
                                                 events.map(ev => (
                                                     <div 
                                                         key={ev.id} 
                                                         onClick={() => setSelectedAppointment(ev)}
-                                                        className={`p-2 rounded-lg cursor-pointer transition-transform hover:scale-[1.02] shadow-sm border ${
+                                                        className={`p-1 sm:p-2 rounded-md sm:rounded-lg cursor-pointer transition-transform hover:scale-[1.02] shadow-sm border ${
                                                             ev.status === "COMPLETED" ? "bg-emerald-50 border-emerald-100 dark:bg-emerald-950/20 dark:border-emerald-900" : "bg-indigo-50 border-indigo-100 dark:bg-indigo-900/20 dark:border-indigo-800"
                                                         }`}
                                                     >
-                                                        <div className={`text-xs font-bold mb-1 ${ev.status === "COMPLETED" ? "text-emerald-700 dark:text-emerald-400" : "text-indigo-700 dark:text-indigo-400"}`}>
-                                                            {format(new Date(ev.startTime), 'HH:mm')} - {format(new Date(ev.endTime), 'HH:mm')}
+                                                        <div className={`text-[9px] sm:text-xs font-bold mb-0.5 sm:mb-1 ${ev.status === "COMPLETED" ? "text-emerald-700 dark:text-emerald-400" : "text-indigo-700 dark:text-indigo-400"}`}>
+                                                            {format(new Date(ev.startTime), 'HH:mm')} <span className="hidden sm:inline">- {format(new Date(ev.endTime), 'HH:mm')}</span>
                                                         </div>
-                                                        <div className={`text-xs font-semibold line-clamp-2 ${ev.status === "COMPLETED" ? "text-emerald-900 dark:text-emerald-100" : "text-slate-900 dark:text-slate-100"}`}>
+                                                        <div className={`text-[9px] sm:text-xs font-semibold line-clamp-1 sm:line-clamp-2 ${ev.status === "COMPLETED" ? "text-emerald-900 dark:text-emerald-100" : "text-slate-900 dark:text-slate-100"}`}>
                                                             {ev.title}
                                                         </div>
-                                                        <div className="mt-1 flex items-center gap-1 text-[10px] text-slate-500">
+                                                        <div className="mt-0.5 sm:mt-1 hidden sm:flex items-center gap-1 text-[10px] text-slate-500">
                                                             <Users className="h-3 w-3" /> {ev.technicians.length} téc
                                                         </div>
                                                     </div>

@@ -119,7 +119,7 @@ export default function NewAnnouncementButton() {
                         <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
                             Cancelar
                         </Button>
-                        <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700" disabled={loading}>
+                        <Button type="submit" className="text-white bg-indigo-600 hover:bg-indigo-700" disabled={loading}>
                             {loading ? "Criando..." : "Criar Aviso"}
                         </Button>
                     </DialogFooter>

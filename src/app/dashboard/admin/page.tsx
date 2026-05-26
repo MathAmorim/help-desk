@@ -162,9 +162,8 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
                                                         {user.name}
                                                     </span>
                                                     <div className="flex flex-col sm:flex-row sm:items-center gap-1 mt-0.5 text-[11px] sm:text-xs text-slate-500 font-medium">
-                                                        <span className="truncate max-w-[150px]">{user.funcao || "Sem função"}</span>
+                                                        <span className="truncate max-w-[120px] sm:max-w-none">{user.funcao || "Sem função"}</span>
                                                         <span className="md:hidden text-indigo-600/70 dark:text-indigo-400/70">{user.setor || "Sem setor"}</span>
-                                                        <span className="sm:hidden text-slate-400 lowercase">{user.email || ""}</span>
                                                     </div>
                                                 </div>
                                             </TableCell>
@@ -188,7 +187,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
                                             <TableCell className="hidden lg:table-cell text-center text-xs text-slate-500 dark:text-slate-400">
                                                 {new Date(user.createdAt).toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit' })}
                                             </TableCell>
-                                            <TableCell className="text-right pr-4 sm:pr-6">
+                                            <TableCell className="text-left pl-0 pr-0 sm:pr-6">
                                                 <div className="flex justify-end items-center gap-0.5 sm:gap-1">
                                                     <EditUserButton user={user} sectors={sectors} />
                                                     <div className="hidden sm:block">

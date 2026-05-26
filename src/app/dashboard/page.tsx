@@ -87,33 +87,8 @@ export default async function DashboardPage({
 
     return (
         <div className="max-w-7xl mx-auto space-y-6">
-            <AutoRefresh interval={15000} />
-            <AnnouncementBanner />
-            {unratedTickets.length > 0 && (
-                <div className="bg-gradient-to-r from-indigo-600 to-violet-600 rounded-lg p-5 sm:p-6 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between text-white gap-4 relative overflow-hidden animate-in slide-in-from-top-4 fade-in duration-500">
-                    <div className="absolute -right-10 -top-10 opacity-10">
-                        <Star className="w-40 h-40" />
-                    </div>
-                    <div className="flex items-center gap-4 relative z-10">
-                        <div className="bg-white/20 p-3 rounded-full backdrop-blur-sm shrink-0">
-                            <Star className="h-6 w-6 fill-amber-300 text-amber-300" />
-                        </div>
-                        <div>
-                            <h3 className="font-bold text-lg sm:text-xl">Você possui atendimentos aguardando nota!</h3>
-                            <p className="text-indigo-100 text-sm mt-1">
-                                {unratedTickets.length === 1
-                                    ? `O chamado "${unratedTickets[0].titulo}" já foi resolvido. Nos conte como foi!`
-                                    : `Existem ${unratedTickets.length} chamados concluídos aguardando o seu feedback.`}
-                            </p>
-                        </div>
-                    </div>
-                    <Link href={`/dashboard/ticket/${unratedTickets[0].id}#avaliacao`} className="w-full sm:w-auto relative z-10">
-                        <Button variant="outline" className="h-11 text-indigo-700 dark:text-indigo-300 border-white bg-white hover:bg-slate-100 font-extrabold transition-all hover:scale-105 active:scale-95 shadow-sm w-full sm:w-auto px-6">
-                            Avaliar Agora
-                        </Button>
-                    </Link>
-                </div>
-            )}
+            <AutoRefresh interval={30000} />
+            
 
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
@@ -164,11 +139,11 @@ export default async function DashboardPage({
                                         <TableRow>
                                             <TableHead className="hidden md:table-cell w-[100px]">ID</TableHead>
                                             <TableHead>Título</TableHead>
-                                            <TableHead className="hidden md:table-cell">Categoria</TableHead>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead className="hidden md:table-cell">Prioridade</TableHead>
-                                            <TableHead className="hidden md:table-cell">Solicitante</TableHead>
-                                            <TableHead className="text-right">Ação</TableHead>
+                                            <TableHead className="hidden md:table-cell w-[140px]">Categoria</TableHead>
+                                            <TableHead className="hidden md:table-cell w-[140px]">Status</TableHead>
+                                            <TableHead className="hidden md:table-cell w-[120px]">Prioridade</TableHead>
+                                            <TableHead className="hidden md:table-cell w-[160px]">Solicitante</TableHead>
+                                            <TableHead className="text-right w-[100px]">Ação</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -187,13 +162,15 @@ export default async function DashboardPage({
                                                         <div className="font-semibold text-slate-700 dark:text-slate-300">#{ticket.id.substring(ticket.id.length - 6).toUpperCase()}</div>
                                                         <div className="text-[10px] whitespace-nowrap opacity-75">{timeAgo(ticket.createdAt)}</div>
                                                     </TableCell>
-                                                    <TableCell className="font-medium max-w-[200px] truncate" title={ticket.titulo}>
+                                                    <TableCell className="font-medium max-w-[250px] truncate" title={ticket.titulo}>
                                                         {ticket.titulo}
+                                                        <div className="md:hidden text-[12px] whitespace-nowrap opacity-75">{ticket.solicitante?.name || "Desconhecido"}</div>
+                                                        <div className="md:hidden text-[10px] whitespace-nowrap opacity-75">{timeAgo(ticket.createdAt)}</div>
                                                     </TableCell>
                                                     <TableCell className="hidden md:table-cell text-slate-600 dark:text-slate-400 text-sm">
                                                         {ticket.categoria}
                                                     </TableCell>
-                                                    <TableCell>
+                                                    <TableCell className="hidden md:table-cell">
                                                         <div className="flex flex-col gap-1">
                                                             {renderStatusBadge(ticket.status)}
                                                             {(new Date().getTime() - new Date(ticket.createdAt).getTime() > delayAssuncaoLimit) && (
@@ -255,11 +232,11 @@ export default async function DashboardPage({
                                         <TableRow>
                                             <TableHead className="hidden md:table-cell w-[100px]">ID</TableHead>
                                             <TableHead>Título</TableHead>
-                                            <TableHead className="hidden md:table-cell">Categoria</TableHead>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead className="hidden md:table-cell">Prioridade</TableHead>
-                                            <TableHead className="hidden md:table-cell">Solicitante</TableHead>
-                                            <TableHead className="text-right">Ação</TableHead>
+                                            <TableHead className="hidden md:table-cell w-[140px]">Categoria</TableHead>
+                                            <TableHead className="hidden md:table-cell w-[140px]">Status</TableHead>
+                                            <TableHead className="hidden md:table-cell w-[120px]">Prioridade</TableHead>
+                                            <TableHead className="hidden md:table-cell w-[160px]">Solicitante</TableHead>
+                                            <TableHead className="text-right w-[100px]">Ação</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -278,13 +255,15 @@ export default async function DashboardPage({
                                                         <div className="font-semibold text-slate-700 dark:text-slate-300">#{ticket.id.substring(ticket.id.length - 6).toUpperCase()}</div>
                                                         <div className="text-[10px] whitespace-nowrap opacity-75">{timeAgo(ticket.createdAt)}</div>
                                                     </TableCell>
-                                                    <TableCell className="font-medium max-w-[200px] truncate" title={ticket.titulo}>
+                                                    <TableCell className="font-medium max-w-[250px] truncate" title={ticket.titulo}>
                                                         {ticket.titulo}
+                                                        <div className="md:hidden text-[12px] whitespace-nowrap opacity-75">{ticket.solicitante?.name || "Desconhecido"}</div>
+                                                        <div className="md:hidden text-[10px] whitespace-nowrap opacity-75">{timeAgo(ticket.createdAt)}</div>
                                                     </TableCell>
                                                     <TableCell className="hidden md:table-cell text-slate-600 dark:text-slate-400 text-sm">
                                                         {ticket.categoria}
                                                     </TableCell>
-                                                    <TableCell>
+                                                    <TableCell className="hidden md:table-cell">
                                                         <div className="flex flex-col gap-1">
                                                             {renderStatusBadge(ticket.status)}
                                                             {(ticket.status === "EM_ANDAMENTO" || ticket.status === "AGUARDANDO_USUARIO" || ticket.status === "PENDENTE_USUARIO") && (new Date().getTime() - new Date(ticket.createdAt).getTime() > delayConclusaoLimit) && (
@@ -343,11 +322,11 @@ export default async function DashboardPage({
                                     <TableRow>
                                         <TableHead className="hidden md:table-cell w-[100px]">ID</TableHead>
                                         <TableHead>Título</TableHead>
-                                        <TableHead className="hidden md:table-cell">Categoria</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead className="hidden md:table-cell">Prioridade</TableHead>
-                                        <TableHead className="hidden md:table-cell">Responsável</TableHead>
-                                        <TableHead className="text-right">Ação</TableHead>
+                                        <TableHead className="hidden md:table-cell w-[140px]">Categoria</TableHead>
+                                        <TableHead className="hidden md:table-cell w-[140px]">Status</TableHead>
+                                        <TableHead className="hidden md:table-cell w-[120px]">Prioridade</TableHead>
+                                        <TableHead className="hidden md:table-cell w-[160px]">Responsável</TableHead>
+                                        <TableHead className="text-right w-[100px]">Ação</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -373,7 +352,7 @@ export default async function DashboardPage({
                                                 <TableCell className="hidden md:table-cell text-slate-600 dark:text-slate-400 text-sm">
                                                     {ticket.categoria}
                                                 </TableCell>
-                                                <TableCell>
+                                                <TableCell className="hidden md:table-cell">
                                                     {ticket.encerradoPeloAutor ? (
                                                         <Badge className="bg-emerald-700 hover:bg-emerald-800 text-white">Encerrado pelo Autor</Badge>
                                                     ) : (
