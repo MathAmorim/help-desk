@@ -15,7 +15,7 @@ import { Users, UserMinus } from "lucide-react";
 
 import UserFilters from "./UserFilters";
 import SortButton from "./SortButton";
-import { normalizeSearchText } from "@/lib/utils";
+import { normalizeSearchText, formatPhone } from "@/lib/utils";
 
 export default async function AdminUsersPage({ searchParams }: { searchParams: Promise<{ showInactive?: string; q?: string; sortBy?: string; order?: string }> }) {
     const session = await auth();
@@ -163,6 +163,12 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
                                                     </span>
                                                     <div className="flex flex-col sm:flex-row sm:items-center gap-1 mt-0.5 text-[11px] sm:text-xs text-slate-500 font-medium">
                                                         <span className="truncate max-w-[120px] sm:max-w-none">{user.funcao || "Sem função"}</span>
+                                                        {user.telefone && (
+                                                            <>
+                                                                <span className="hidden sm:inline text-slate-300">•</span>
+                                                                <span className="text-slate-600 dark:text-slate-400">{formatPhone(user.telefone)}</span>
+                                                            </>
+                                                        )}
                                                         <span className="md:hidden text-indigo-600/70 dark:text-indigo-400/70">{user.setor || "Sem setor"}</span>
                                                     </div>
                                                 </div>

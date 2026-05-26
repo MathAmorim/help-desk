@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Check, X, ShieldAlert, KeyRound, User } from "lucide-react";
+import { Loader2, Check, X, ShieldAlert, KeyRound, User, Phone } from "lucide-react";
 import { updateProfile } from "@/app/actions/profile";
 import { useSession } from "next-auth/react";
 
@@ -20,11 +20,28 @@ function SubmitButton() {
     );
 }
 
-export default function ConfiguracoesForm({ initialNome, email }: { initialNome: string, email: string }) {
+export default function ConfiguracoesForm({ initialNome, email, initialTelefone = "" }: { initialNome: string, email: string, initialTelefone?: string }) {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
     const [password, setPassword] = useState("");
     const [nameVal, setNameVal] = useState(initialNome || "");
+
+    const formatInputPhone = (value: string) => {
+        const clean = value.replace(/\D/g, "");
+        if (clean.length === 0) return "";
+        if (clean.length <= 2) {
+            return `(${clean}`;
+        }
+        if (clean.length <= 6) {
+            return `(${clean.slice(0, 2)}) ${clean.slice(2)}`;
+        }
+        if (clean.length <= 10) {
+            return `(${clean.slice(0, 2)}) ${clean.slice(2, 6)}-${clean.slice(6)}`;
+        }
+        return `(${clean.slice(0, 2)}) ${clean.slice(2, 3)} ${clean.slice(3, 7)}-${clean.slice(7, 11)}`;
+    };
+
+    const [telefoneVal, setTelefoneVal] = useState(formatInputPhone(initialTelefone));
     const { update } = useSession();
 
     // Verificações em tempo real para o usuário
@@ -56,9 +73,11 @@ export default function ConfiguracoesForm({ initialNome, email }: { initialNome:
                     (form.elements.namedItem("confirmPassword") as HTMLInputElement).value = "";
                     setPassword("");
                 }
+            } else {
+                setError(res.error || "Ocorreu um erro ao salvar o perfil.");
             }
         } catch (err: any) {
-            setError(err.message || "Erro inesperado ao salvar perfil.");
+            setError("Erro de conexão com o servidor. Por favor, tente novamente.");
         }
     }
 
@@ -113,6 +132,23 @@ export default function ConfiguracoesForm({ initialNome, email }: { initialNome:
                             required
                         />
                     </div>
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="telefone">Telefone / Celular <span className="text-red-500">*</span></Label>
+                    <div className="relative">
+                        <Phone className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                        <Input
+                            id="telefone"
+                            name="telefone"
+                            value={telefoneVal}
+                            onChange={(e) => setTelefoneVal(formatInputPhone(e.target.value))}
+                            className="pl-9"
+                            required
+                            placeholder="Ex: (11) 9 9999-9999"
+                        />
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">DDD + número (Exemplo: 11999999999)</p>
                 </div>
             </div>
 

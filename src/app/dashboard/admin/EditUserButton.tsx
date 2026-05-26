@@ -27,9 +27,10 @@ export default function EditUserButton({ user, sectors = [] }: { user: any, sect
         const role = formData.get("role") as string;
         const funcao = formData.get("funcao") as string;
         const setor = formData.get("setor") as string;
+        const telefone = formData.get("telefone") as string;
 
         try {
-            const result = await updateUser({ id: user.id, name, email, role, cpf, funcao, setor });
+            const result = await updateUser({ id: user.id, name, email, role, cpf, funcao, setor, telefone });
             if (result.success) {
                 toast.success("Usuário atualizado com sucesso");
                 setOpen(false);
@@ -83,6 +84,16 @@ export default function EditUserButton({ user, sectors = [] }: { user: any, sect
                             <div className="space-y-2">
                                 <Label htmlFor={`email-${user.id}`}>E-mail <span className="text-xs font-normal text-slate-500">(Opcional)</span></Label>
                                 <Input id={`email-${user.id}`} name="email" type="email" defaultValue={user.email || ""} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor={`telefone-${user.id}`}>Telefone / Celular <span className="text-red-500">*</span></Label>
+                                <Input
+                                    id={`telefone-${user.id}`}
+                                    name="telefone"
+                                    defaultValue={user.telefone || ""}
+                                    required
+                                    onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '').slice(0, 11); }}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor={`role-${user.id}`}>Perfil de Acesso</Label>

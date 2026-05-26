@@ -27,7 +27,7 @@ function generateRandomPassword() {
     return password.split('').sort(() => 0.5 - Math.random()).join('');
 }
 
-export async function createUser(data: { name: string; email?: string; role: string; cpf: string; funcao?: string; setor?: string }) {
+export async function createUser(data: { name: string; email?: string; role: string; cpf: string; funcao?: string; setor?: string; telefone?: string }) {
     try {
         const session = await auth();
 
@@ -35,13 +35,22 @@ export async function createUser(data: { name: string; email?: string; role: str
             return { success: false, error: "Não autorizado" };
         }
 
-        const { name, email, role, cpf, funcao, setor } = data;
+        const { name, email, role, cpf, funcao, setor, telefone } = data;
 
         // Limpa o CPF
         const cleanedCpf = cpf.replace(/\D/g, '');
 
         if (cleanedCpf.length !== 11) {
             return { success: false, error: "O CPF deve conter exatamente 11 dígitos numéricos." };
+        }
+
+        // Limpa e valida o Telefone
+        const cleanedTelefone = telefone ? telefone.replace(/\D/g, '') : '';
+        if (!cleanedTelefone) {
+            return { success: false, error: "O campo Telefone é obrigatório." };
+        }
+        if (cleanedTelefone.length < 10 || cleanedTelefone.length > 11) {
+            return { success: false, error: "O número de telefone deve conter o DDD (2 dígitos) seguido de 8 ou 9 dígitos (ex: 11999999999 ou 1133333333)." };
         }
 
         const whereConditions: any[] = [{ cpf: cleanedCpf }];
@@ -75,9 +84,10 @@ export async function createUser(data: { name: string; email?: string; role: str
                 cpf: cleanedCpf,
                 funcao: funcao || null,
                 setor: setor || null,
+                telefone: cleanedTelefone,
                 password: hashedPassword,
                 mustChangePassword: true,
-                searchVector: normalizeSearchText(`${name} ${email || ""} ${cleanedCpf} ${setor || ""} ${funcao || ""}`)
+                searchVector: normalizeSearchText(`${name} ${email || ""} ${cleanedCpf} ${setor || ""} ${funcao || ""} ${cleanedTelefone}`)
             },
         });
 
@@ -143,7 +153,7 @@ export async function resetUserPassword(userId: string) {
     }
 }
 
-export async function updateUser(data: { id: string; name: string; email?: string; role: string; cpf: string; funcao?: string; setor?: string }) {
+export async function updateUser(data: { id: string; name: string; email?: string; role: string; cpf: string; funcao?: string; setor?: string; telefone?: string }) {
     try {
         const session = await auth();
 
@@ -151,13 +161,22 @@ export async function updateUser(data: { id: string; name: string; email?: strin
             return { success: false, error: "Não autorizado" };
         }
 
-        const { id, name, email, role, cpf, funcao, setor } = data;
+        const { id, name, email, role, cpf, funcao, setor, telefone } = data;
 
         // Limpa o CPF
         const cleanedCpf = cpf.replace(/\D/g, '');
 
         if (cleanedCpf.length !== 11) {
             return { success: false, error: "O CPF deve conter exatamente 11 dígitos numéricos." };
+        }
+
+        // Limpa e valida o Telefone
+        const cleanedTelefone = telefone ? telefone.replace(/\D/g, '') : '';
+        if (!cleanedTelefone) {
+            return { success: false, error: "O campo Telefone é obrigatório." };
+        }
+        if (cleanedTelefone.length < 10 || cleanedTelefone.length > 11) {
+            return { success: false, error: "O número de telefone deve conter o DDD (2 dígitos) seguido de 8 ou 9 dígitos (ex: 11999999999 ou 1133333333)." };
         }
 
         const whereConditions: any[] = [{ cpf: cleanedCpf }];
@@ -190,7 +209,8 @@ export async function updateUser(data: { id: string; name: string; email?: strin
                 cpf: cleanedCpf,
                 funcao: funcao || null,
                 setor: setor || null,
-                searchVector: normalizeSearchText(`${name} ${email || ""} ${cleanedCpf} ${setor || ""} ${funcao || ""}`)
+                telefone: cleanedTelefone,
+                searchVector: normalizeSearchText(`${name} ${email || ""} ${cleanedCpf} ${setor || ""} ${funcao || ""} ${cleanedTelefone}`)
             },
         });
 

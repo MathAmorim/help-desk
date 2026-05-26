@@ -9,11 +9,13 @@ export default async function NovoChamadoPage() {
     const session = await auth();
 
     let userSetor = "";
+    let userTelefone = "";
     if (session?.user?.id) {
         const dbUser = await (prisma.user as any).findUnique({
             where: { id: session.user.id }
         });
         userSetor = (dbUser as any)?.setor || "";
+        userTelefone = (dbUser as any)?.telefone || "";
     }
 
     const categorias = await prisma.category.findMany({
@@ -31,5 +33,5 @@ export default async function NovoChamadoPage() {
         .filter((s: string) => s && s.trim() !== "")
         .sort();
 
-    return <NewTicketForm categorias={categorias} userSetor={userSetor} userRole={session?.user?.role} existingSetores={existingSetores} />;
+    return <NewTicketForm categorias={categorias} userSetor={userSetor} userTelefone={userTelefone} userRole={session?.user?.role} existingSetores={existingSetores} />;
 }

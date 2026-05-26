@@ -147,6 +147,23 @@ export default function RegisterForm({ token, sectors }: { token: string; sector
                         </div>
 
                         <div className="space-y-2">
+                            <Label htmlFor="telefone" className="text-slate-700">Telefone / Celular <span className="text-red-500">*</span></Label>
+                            <Input 
+                                id="telefone" 
+                                name="telefone" 
+                                placeholder="Ex: 11999999999" 
+                                required 
+                                disabled={isPending} 
+                                className="bg-white border-slate-200" 
+                                onChange={(e) => {
+                                    let val = e.target.value.replace(/\D/g, "");
+                                    if (val.length > 11) val = val.slice(0, 11);
+                                    e.target.value = val;
+                                }}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
                             <Label htmlFor="password" title="Mínimo 8 caracteres, 1 maiúscula, 1 minúscula e 1 número" className="text-slate-700">Crie uma Senha Segura</Label>
                             <PasswordInput 
                                 id="password" 

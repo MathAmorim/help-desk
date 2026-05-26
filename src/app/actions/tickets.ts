@@ -16,64 +16,91 @@ export async function createTicket(data: {
     paraOutraPessoa: boolean;
     attachmentIds?: string[];
 }) {
-    const session = await auth();
+    try {
+        const session = await auth();
 
-    if (!session || !session.user) {
-        throw new Error("Não autorizado");
+        if (!session || !session.user) {
+            return { success: false, error: "Não autorizado" };
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { id: session.user.id }
+        });
+
+        if (!user || !user.telefone) {
+            return { success: false, error: "Você precisa cadastrar um número de telefone no seu perfil antes de abrir um chamado." };
+        }
+
+        // Rate Limit: Bloqueia IPs/Usuários que abrirem mais de 3 tickets em menos de 1 minuto (Spam flood).
+        const isAllowed = checkRateLimitUser(session.user.id, "createTicket", 3, 60 * 1000);
+        if (!isAllowed) {
+            return { success: false, error: "Você atingiu o limite de criação de chamados. Por favor, aguarde alguns instantes." };
+        }
+
+        const categoryRecord = await prisma.category.findUnique({
+            where: { nome: data.categoria }
+        });
+        const prioridade = categoryRecord ? categoryRecord.prioridadePadrao : "BAIXA";
+        const tempoSLA = categoryRecord ? (categoryRecord as any).tempoResolucao : 72;
+
+        if (data.titulo?.length > 150) {
+            return { success: false, error: "Título não pode ter mais de 150 caracteres." };
+        }
+        if (data.descricao?.length > 10000) {
+            return { success: false, error: "Descrição excede 10.000 caracteres. Por favor, anexe um arquivo para logs muito extensos." };
+        }
+        
+        // Contato limpo e obrigatório
+        const cleanContato = data.contatoOpcional ? data.contatoOpcional.replace(/\D/g, "") : "";
+        if (!cleanContato) {
+            return { success: false, error: "O número de telefone de contato é obrigatório." };
+        }
+        if (cleanContato.length < 10 || cleanContato.length > 11) {
+            return { success: false, error: "O telefone de contato deve conter de 10 a 11 números (DDD + número)." };
+        }
+        if (cleanContato.length > 150) {
+            return { success: false, error: "Contato opcional excede 150 caracteres." };
+        }
+
+        const now = new Date();
+        const vencimentoSLA = new Date(now.getTime() + (tempoSLA * 60 * 60 * 1000));
+
+        const cleanTitle = data.titulo.replace(/\0/g, "");
+        const cleanDesc = data.descricao.replace(/\0/g, "");
+
+        const ticket = await prisma.ticket.create({
+            data: {
+                titulo: cleanTitle,
+                descricao: cleanDesc,
+                categoria: data.categoria,
+                prioridade,
+                departamento: data.departamento,
+                contatoOpcional: cleanContato,
+                paraOutraPessoa: data.paraOutraPessoa,
+                vencimentoSLA,
+                solicitanteId: session.user.id,
+                searchVector: normalizeSearchText(`${cleanTitle} ${cleanDesc} ${data.departamento || ""} ${session.user.name || ""}`),
+                attachments: data.attachmentIds && data.attachmentIds.length > 0 ? {
+                    connect: data.attachmentIds.map(id => ({ id }))
+                } : undefined
+            } as any,
+        });
+
+        await prisma.auditLog.create({
+            data: {
+                acao: "ABERTURA",
+                detalhes: "Chamado aberto pelo usuário.",
+                ticketId: ticket.id,
+                userId: session.user.id,
+            },
+        });
+
+        revalidatePath("/dashboard");
+        return { success: true, ticket };
+    } catch (error: any) {
+        console.error("Erro ao criar ticket:", error);
+        return { success: false, error: error.message || "Erro técnico ao abrir o chamado." };
     }
-
-    // Rate Limit: Bloqueia IPs/Usuários que abrirem mais de 3 tickets em menos de 1 minuto (Spam flood).
-    const isAllowed = checkRateLimitUser(session.user.id, "createTicket", 3, 60 * 1000);
-    if (!isAllowed) {
-        throw new Error("Você atingiu o limite de criação de chamados. Por favor, aguarde alguns instantes.");
-    }
-
-    const categoryRecord = await prisma.category.findUnique({
-        where: { nome: data.categoria }
-    });
-    const prioridade = categoryRecord ? categoryRecord.prioridadePadrao : "BAIXA";
-    const tempoSLA = categoryRecord ? (categoryRecord as any).tempoResolucao : 72;
-
-    if (data.titulo?.length > 150) throw new Error("Título não pode ter mais de 150 caracteres.");
-    if (data.descricao?.length > 10000) throw new Error("Descrição excede 10.000 caracteres. Por favor, anexe um arquivo para logs muito extensos.");
-    if (data.contatoOpcional && data.contatoOpcional.length > 150) throw new Error("Contato opcional excede 150 caracteres.");
-
-    const now = new Date();
-    const vencimentoSLA = new Date(now.getTime() + (tempoSLA * 60 * 60 * 1000));
-
-    const cleanTitle = data.titulo.replace(/\0/g, "");
-    const cleanDesc = data.descricao.replace(/\0/g, "");
-    const cleanContato = data.contatoOpcional ? data.contatoOpcional.replace(/\0/g, "") : undefined;
-
-    const ticket = await prisma.ticket.create({
-        data: {
-            titulo: cleanTitle,
-            descricao: cleanDesc,
-            categoria: data.categoria,
-            prioridade,
-            departamento: data.departamento,
-            contatoOpcional: cleanContato,
-            paraOutraPessoa: data.paraOutraPessoa,
-            vencimentoSLA,
-            solicitanteId: session.user.id,
-            searchVector: normalizeSearchText(`${cleanTitle} ${cleanDesc} ${data.departamento || ""} ${session.user.name || ""}`),
-            attachments: data.attachmentIds && data.attachmentIds.length > 0 ? {
-                connect: data.attachmentIds.map(id => ({ id }))
-            } : undefined
-        } as any,
-    });
-
-    await prisma.auditLog.create({
-        data: {
-            acao: "ABERTURA",
-            detalhes: "Chamado aberto pelo usuário.",
-            ticketId: ticket.id,
-            userId: session.user.id,
-        },
-    });
-
-    revalidatePath("/dashboard");
-    return ticket;
 }
 
 export interface TicketFilters {

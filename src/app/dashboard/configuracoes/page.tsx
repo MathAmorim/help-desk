@@ -12,7 +12,7 @@ export default async function ConfiguracoesPage() {
 
     const user = await prisma.user.findUnique({
         where: { id: session.user.id },
-        select: { name: true, email: true, role: true }
+        select: { name: true, email: true, role: true, telefone: true }
     });
 
     if (!user) return null;
@@ -28,7 +28,7 @@ export default async function ConfiguracoesPage() {
 
             <div className="bg-white dark:bg-slate-950 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
                 <div className="p-6">
-                    <ConfiguracoesForm initialNome={user.name || ""} email={user.email || ""} />
+                    <ConfiguracoesForm initialNome={user.name || ""} email={user.email || ""} initialTelefone={user.telefone || ""} />
                 </div>
             </div>
         </div>

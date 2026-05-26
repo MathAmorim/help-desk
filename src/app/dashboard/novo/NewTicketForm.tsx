@@ -14,7 +14,7 @@ import Link from "next/link";
 
 import { uploadFile } from "@/app/actions/upload";
 
-export default function NewTicketForm({ categorias, userSetor = "", userRole = "USUARIO", existingSetores = [] }: { categorias: any[], userSetor?: string, userRole?: string, existingSetores?: string[] }) {
+export default function NewTicketForm({ categorias, userSetor = "", userTelefone = "", userRole = "USUARIO", existingSetores = [] }: { categorias: any[], userSetor?: string, userTelefone?: string, userRole?: string, existingSetores?: string[] }) {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -24,6 +24,55 @@ export default function NewTicketForm({ categorias, userSetor = "", userRole = "
 
     const categoryObj = categorias.find(c => c.nome === selectedCategory);
     const dynamicPlaceholder = categoryObj?.placeholder || "Descreva o que estava tentando fazer, o que aconteceu e mensagens de erro (se houver).";
+
+    if (!userTelefone) {
+        return (
+            <div className="max-w-3xl mx-auto space-y-6">
+                <div className="flex items-center gap-4">
+                    <Link href="/dashboard">
+                        <Button variant="outline" size="icon" className="h-10 w-10 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/10 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all hover:scale-105 active:scale-95 shadow-sm">
+                            <ArrowLeft className="h-4 w-4" />
+                        </Button>
+                    </Link>
+                    <div>
+                        <h2 className="text-3xl font-bold tracking-tight">Novo Chamado</h2>
+                        <p className="text-slate-500 dark:text-slate-400">Preencha os dados abaixo para relatar um problem ou solicitação.</p>
+                    </div>
+                </div>
+
+                <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/10 shadow-md">
+                    <CardHeader>
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center text-amber-600 dark:text-amber-400 font-bold text-lg">
+                                !
+                            </div>
+                            <div>
+                                <CardTitle className="text-amber-800 dark:text-amber-400 text-lg sm:text-xl">Telefone Obrigatório</CardTitle>
+                                <CardDescription className="text-amber-600 dark:text-amber-500 text-xs sm:text-sm">
+                                    É necessário cadastrar seu número de telefone para abrir chamados.
+                                </CardDescription>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4 text-sm sm:text-base">
+                        <p className="text-slate-600 dark:text-slate-300">
+                            Detectamos que você ainda não tem um número de telefone cadastrado em sua conta. Para que o nosso suporte técnico possa entrar em contato de forma rápida e eficiente, <strong>é obrigatório informar um telefone de contato</strong>.
+                        </p>
+                        <p className="text-slate-600 dark:text-slate-300">
+                            Por favor, clique no botão abaixo para acessar a página de perfil e atualizar suas informações de contato. Após salvar, você poderá abrir novos chamados.
+                        </p>
+                    </CardContent>
+                    <CardFooter>
+                        <Link href="/dashboard/configuracoes" className="w-full">
+                            <Button className="w-full h-11 bg-amber-600 hover:bg-amber-700 text-white font-bold transition-all shadow-md active:scale-[0.98] border-0">
+                                Cadastrar Telefone no Perfil
+                            </Button>
+                        </Link>
+                    </CardFooter>
+                </Card>
+            </div>
+        );
+    }
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
@@ -44,7 +93,9 @@ export default function NewTicketForm({ categorias, userSetor = "", userRole = "
 
         try {
             if (!categoria) {
-                throw new Error("Selecione uma categoria válida.");
+                setError("Selecione uma categoria válida.");
+                setIsLoading(false);
+                return;
             }
 
             const attachmentIds: string[] = [];
@@ -57,7 +108,7 @@ export default function NewTicketForm({ categorias, userSetor = "", userRole = "
                 attachmentIds.push(att.id);
             }
 
-            await createTicket({
+            const res = await createTicket({
                 titulo,
                 descricao,
                 categoria,
@@ -67,9 +118,14 @@ export default function NewTicketForm({ categorias, userSetor = "", userRole = "
                 attachmentIds
             });
 
-            router.push("/dashboard");
+            if (res.success) {
+                router.push("/dashboard");
+            } else {
+                setError(res.error || "Ocorreu um erro ao abrir o chamado.");
+                setIsLoading(false);
+            }
         } catch (err: any) {
-            setError(err.message || "Ocorreu um erro ao abrir o chamado.");
+            setError("Ocorreu um erro ao processar os anexos ou enviar o chamado.");
             setIsLoading(false);
         }
     }
@@ -124,11 +180,13 @@ export default function NewTicketForm({ categorias, userSetor = "", userRole = "
                                 )}
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="contatoOpcional">Telefone ou Ramal (Apenas Números)</Label>
+                                <Label htmlFor="contatoOpcional">Telefone (Apenas Números) <span className="text-red-500">*</span></Label>
                                 <Input
                                     id="contatoOpcional"
                                     name="contatoOpcional"
                                     placeholder="Ex: 11999999999"
+                                    defaultValue={userTelefone}
+                                    required
                                     onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '').slice(0, 15); }}
                                 />
                             </div>

@@ -66,12 +66,21 @@ export async function registerWithInvite(token: string, data: any, clientIp: str
             return { success: false, error: "O link de cadastro não é mais válido ou já expirou." };
         }
 
-        const { name, email, cpf, password, funcao, setor } = data;
+        const { name, email, cpf, password, funcao, setor, telefone } = data;
 
         // 3. Limpar e validar CPF
         const cleanedCpf = (cpf || "").replace(/\D/g, '');
         if (cleanedCpf.length !== 11) {
             return { success: false, error: "O CPF informado deve conter 11 dígitos numéricos." };
+        }
+
+        // Limpa e valida o Telefone
+        const cleanedTelefone = (telefone || "").replace(/\D/g, '');
+        if (!cleanedTelefone) {
+            return { success: false, error: "O campo Telefone é obrigatório." };
+        }
+        if (cleanedTelefone.length < 10 || cleanedTelefone.length > 11) {
+            return { success: false, error: "O número de telefone deve conter o DDD (2 dígitos) seguido de 8 ou 9 dígitos (ex: 11999999999 ou 1133333333)." };
         }
 
         // 4. Verificar duplicidade de CPF
@@ -108,8 +117,9 @@ export async function registerWithInvite(token: string, data: any, clientIp: str
                     role: "USUARIO",
                     funcao: funcao || null,
                     setor: setor || null,
+                    telefone: cleanedTelefone,
                     mustChangePassword: false, // O próprio usuário definiu a senha
-                    searchVector: normalizeSearchText(`${name} ${email || ""} ${cleanedCpf} ${setor || ""} ${funcao || ""}`)
+                    searchVector: normalizeSearchText(`${name} ${email || ""} ${cleanedCpf} ${setor || ""} ${funcao || ""} ${cleanedTelefone}`)
                 }
             });
 

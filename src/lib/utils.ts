@@ -35,3 +35,15 @@ export function normalizeSearchText(text: string | null | undefined): string {
     .toLowerCase()
     .trim();
 }
+
+export function formatPhone(phone: string | null | undefined): string {
+  if (!phone) return "";
+  const clean = phone.replace(/\D/g, "");
+  if (clean.length === 11) {
+    return `(${clean.slice(0, 2)}) ${clean.slice(2, 3)} ${clean.slice(3, 7)}-${clean.slice(7)}`;
+  }
+  if (clean.length === 10) {
+    return `(${clean.slice(0, 2)}) ${clean.slice(2, 6)}-${clean.slice(6)}`;
+  }
+  return phone;
+}

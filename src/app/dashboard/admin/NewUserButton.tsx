@@ -32,9 +32,10 @@ export default function NewUserButton({ sectors = [] }: { sectors?: string[] }) 
         const role = formData.get("role") as string;
         const funcao = formData.get("funcao") as string;
         const setor = formData.get("setor") as string;
+        const telefone = formData.get("telefone") as string;
 
         try {
-            const result = await createUser({ name, email, role, cpf, funcao, setor });
+            const result = await createUser({ name, email, role, cpf, funcao, setor, telefone });
             if (result.success) {
                 setGeneratedPassword(result.tempPassword!);
                 setGeneratedCpf(cpf);
@@ -111,6 +112,16 @@ export default function NewUserButton({ sectors = [] }: { sectors?: string[] }) 
                             <div className="space-y-2">
                                 <Label htmlFor="email">E-mail <span className="text-xs font-normal text-slate-500">(Opcional)</span></Label>
                                 <Input id="email" name="email" type="email" placeholder="maria@empresa.com" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="telefone">Telefone / Celular <span className="text-red-500">*</span></Label>
+                                <Input
+                                    id="telefone"
+                                    name="telefone"
+                                    placeholder="Ex: 11999999999"
+                                    required
+                                    onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '').slice(0, 11); }}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="role">Perfil de Acesso</Label>
