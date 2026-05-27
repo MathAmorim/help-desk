@@ -1,8 +1,15 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { checkRateLimitIp } from "@/lib/rate-limit"; // Assuming correct path
+
+class CustomAuthError extends CredentialsSignin {
+    constructor(message: string) {
+        super(message);
+        this.code = message;
+    }
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
     trustHost: true,
@@ -20,7 +27,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 const passwordStr = credentials?.password as string;
 
                 if (!identifierStr || !passwordStr) {
-                    throw new Error("Identificação e senha são obrigatórios.");
+                    throw new CustomAuthError("Identificação e senha são obrigatórios.");
                 }
 
                 const isEmail = identifierStr.includes('@');
@@ -31,12 +38,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 if (isEmail) {
                     user = await prisma.user.findFirst({ where: { email: identifierStr } });
                     if (user && user.role !== "ADMIN") {
-                        throw new Error("Acesso Negado: O login via E-mail é exclusivo para Administradores. Por favor, utilize seu CPF.");
+                        throw new CustomAuthError("Acesso Negado: O login via E-mail é exclusivo para Administradores. Por favor, utilize seu CPF.");
                     }
                 } else if (cleanedCpf.length === 11) {
                     user = await prisma.user.findFirst({ where: { cpf: cleanedCpf } });
                 } else {
-                    throw new Error("Formato inválido. Digite seu CPF (11 dígitos).");
+                    throw new CustomAuthError("Formato inválido. Digite seu CPF (11 dígitos).");
                 }
 
                 if (!user) {
@@ -46,11 +53,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                             detalhes: `Tentativa de login falhou: Usuário [${identifierStr}] não encontrado.`
                         }
                     });
-                    throw new Error("Usuário não encontrado ou credenciais incorretas.");
+                    throw new CustomAuthError("Usuário não encontrado ou credenciais incorretas.");
                 }
 
                 if (!(user as any).ativo) {
-                    throw new Error("Conta desativada. Por favor, procure o administrador.");
+                    throw new CustomAuthError("Conta desativada. Por favor, procure o administrador.");
                 }
 
                 const isValid = await bcrypt.compare(passwordStr, user.password);
@@ -63,7 +70,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                             detalhes: `Tentativa de login falhou: Senha incorreta para o usuário ${user.name} (${user.cpf}).`
                         }
                     });
-                    throw new Error("Senha incorreta.");
+                    throw new CustomAuthError("Senha incorreta.");
                 }
 
                 return {

@@ -42,7 +42,13 @@ export default function LoginPage() {
         });
 
         if (result?.error) {
-            setError(result.error);
+            let friendlyMessage = result.error;
+            if (result.error === "CredentialsSignin") {
+                friendlyMessage = "Usuário não encontrado ou credenciais incorretas.";
+            } else if (result.error === "Configuration") {
+                friendlyMessage = "Erro de configuração ou falha na validação das credenciais.";
+            }
+            setError(friendlyMessage);
             setIsLoading(false);
         } else {
             router.push("/dashboard");
